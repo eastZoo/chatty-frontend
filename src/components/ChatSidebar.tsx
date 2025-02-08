@@ -1,9 +1,17 @@
-// src/components/ChatSidebar.tsx
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChats, createChat, updateChatTitle, Chat } from "../api/chat";
 import { useRecoilState } from "recoil";
 import { selectedChatState } from "../state/atoms";
+import {
+  SidebarContainer,
+  NewChatButton,
+  ChatList,
+  ChatItem,
+  ChatTitle,
+  EditButton,
+  TitleInput,
+} from "./ChatSidebar.styles";
 
 const ChatSidebar: React.FC = () => {
   const queryClient = useQueryClient();
@@ -48,39 +56,43 @@ const ChatSidebar: React.FC = () => {
   if (isLoading) return <div>Loading chats...</div>;
 
   return (
-    <div
-      style={{ width: "250px", borderRight: "1px solid #ccc", padding: "10px" }}
-    >
-      <button onClick={handleNewChat}>새 채팅</button>
-      <ul style={{ listStyle: "none", padding: 0 }}>
+    <SidebarContainer>
+      <NewChatButton onClick={handleNewChat}>새 채팅</NewChatButton>
+      <ChatList>
         {chats &&
           chats.map((chat) => (
-            <li key={chat.id} style={{ margin: "10px 0", cursor: "pointer" }}>
+            <ChatItem
+              key={chat.id}
+              active={selectedChat?.id === chat.id}
+              onClick={() => {
+                if (selectedChat?.id !== chat.id) {
+                  setSelectedChat(chat);
+                }
+              }}
+            >
               {editingChatId === chat.id ? (
-                <div>
-                  <input
+                <>
+                  <TitleInput
                     type="text"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                   />
-                  <button onClick={() => handleTitleSubmit(chat)}>저장</button>
-                </div>
+                  <EditButton onClick={() => handleTitleSubmit(chat)}>
+                    저장
+                  </EditButton>
+                </>
               ) : (
-                <div
-                  onClick={() => {
-                    if (selectedChat?.id !== chat.id) {
-                      setSelectedChat(chat);
-                    }
-                  }}
-                >
-                  <span>{chat.title}</span>
-                  <button onClick={() => handleTitleChange(chat)}>수정</button>
-                </div>
+                <>
+                  <ChatTitle>{chat.title}</ChatTitle>
+                  <EditButton onClick={() => handleTitleChange(chat)}>
+                    수정
+                  </EditButton>
+                </>
               )}
-            </li>
+            </ChatItem>
           ))}
-      </ul>
-    </div>
+      </ChatList>
+    </SidebarContainer>
   );
 };
 

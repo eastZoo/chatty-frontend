@@ -1,11 +1,18 @@
-// src/pages/LoginPage.tsx
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { login, LoginRequest } from "../api/auth";
+import { login, LoginRequest } from "../../api/auth";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { setToken } from "../api/axiosInstance";
+import { setToken } from "../../api/axiosInstance";
 import useAuthToken from "@/lib/hooks/useAuthToken";
+import {
+  LoginContainer,
+  LoginForm,
+  Title,
+  InputField,
+  SubmitButton,
+  LinkText,
+} from "./LoginPage.styles";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,12 +25,8 @@ const LoginPage: React.FC = () => {
     onSuccess: async (res: any) => {
       console.log(res);
       if (res.success) {
-        // 로그인 성공
-
-        console.log(res.data);
         await customLogin(res.data);
       } else {
-        // 로그인 실패
         toast.error(res.message);
       }
     },
@@ -43,45 +46,29 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", width: "300px" }}
-      >
-        <h2>로그인</h2>
-        <input
+    <LoginContainer>
+      <LoginForm onSubmit={handleSubmit}>
+        <Title>로그인</Title>
+        <InputField
           type="text"
           placeholder="사용자 이름"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          style={{ marginBottom: "10px", padding: "8px" }}
         />
-        <input
+        <InputField
           type="password"
           placeholder="비밀번호"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ marginBottom: "10px", padding: "8px" }}
         />
-        <button
-          type="submit"
-          style={{ padding: "8px" }}
-          disabled={mutation.isPending}
-        >
+        <SubmitButton type="submit" disabled={mutation.isPending}>
           로그인
-        </button>
-        <p>
+        </SubmitButton>
+        <LinkText>
           계정이 없으신가요? <Link to="/register">회원가입</Link>
-        </p>
-      </form>
-    </div>
+        </LinkText>
+      </LoginForm>
+    </LoginContainer>
   );
 };
 

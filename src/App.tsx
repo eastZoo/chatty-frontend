@@ -5,11 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RecoilRoot } from "recoil";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import ChatPage from "./pages/ChatPage";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AuthTokenLayout from "./core/AuthTokenLayout";
+import LoginPage from "@/pages/LoginPage/LoginPage";
+import RegisterPage from "@/pages/RegisterPage/RegisterPage";
+import ChatPage from "@/pages/ChatPage/ChatPage";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import AuthTokenLayout from "@/core/AuthTokenLayout";
 
 const queryClient = new QueryClient();
 

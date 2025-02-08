@@ -1,12 +1,16 @@
-// src/pages/RegisterPage.tsx
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { register, RegisterRequest, RegisterResponse } from "../api/auth";
+import { register, RegisterRequest } from "../../api/auth";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import { setToken } from "../api/axiosInstance";
-import { saveAccessToken } from "../utils/authFunctions";
-import { ResponseType } from "@/types/response.types";
+import {
+  RegisterContainer,
+  RegisterForm,
+  Title,
+  InputField,
+  SubmitButton,
+  LinkText,
+} from "./RegisterPage.styles";
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,9 +20,7 @@ const RegisterPage: React.FC = () => {
 
   const mutation = useMutation({
     mutationFn: register,
-    onSuccess: (data: ResponseType<any>) => {
-      console.log(data.success);
-      // 회원가입 성공 후 JWT 토큰을 저장하고 채팅 화면으로 이동
+    onSuccess: (data: any) => {
       if (data.success) {
         navigate("/");
       } else {
@@ -41,52 +43,35 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", width: "300px" }}
-      >
-        <h2>회원가입</h2>
-        <input
+    <RegisterContainer>
+      <RegisterForm onSubmit={handleSubmit}>
+        <Title>회원가입</Title>
+        <InputField
           type="text"
           placeholder="사용자 이름"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          style={{ marginBottom: "10px", padding: "8px" }}
         />
-        <input
+        <InputField
           type="password"
           placeholder="비밀번호"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ marginBottom: "10px", padding: "8px" }}
         />
-        <input
+        <InputField
           type="password"
           placeholder="비밀번호 확인"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          style={{ marginBottom: "10px", padding: "8px" }}
         />
-        <button
-          type="submit"
-          disabled={mutation.isPending}
-          style={{ padding: "8px" }}
-        >
+        <SubmitButton type="submit" disabled={mutation.isPending}>
           회원가입
-        </button>
-        <p>
+        </SubmitButton>
+        <LinkText>
           이미 계정이 있으신가요? <Link to="/login">로그인</Link>
-        </p>
-      </form>
-    </div>
+        </LinkText>
+      </RegisterForm>
+    </RegisterContainer>
   );
 };
 
