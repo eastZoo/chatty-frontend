@@ -6,20 +6,20 @@ export const ChatWindowContainer = styled.div`
   flex-direction: column;
   background-color: #36393f;
   color: #fff;
-  padding: 16px;
-  height: 100vh;
+  position: relative;
+  height: 100%;
   box-sizing: border-box;
-
-  @media (max-width: 768px) {
-    height: auto;
-  }
 `;
 
 export const MessagesContainer = styled.div`
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* 메시지를 하단에 정렬 */
   overflow-y: auto;
-  margin-bottom: 16px;
-  padding-right: 8px;
+  padding: 16px;
+  /* 하단 고정 MessageInput 영역 높이 고려 (예: 80px) */
+  padding-bottom: 80px;
 `;
 
 export const MessageItem = styled.div`
@@ -35,6 +35,7 @@ export const MessageItem = styled.div`
   }
 `;
 
+// 더미 엘리먼트는 하단 정렬 시 필요 없을 수도 있으나, 만약 자동 스크롤을 위해 사용한다면 그대로 둡니다.
 export const DummyDiv = styled.div`
   height: 1px;
 `;

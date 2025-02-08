@@ -1,18 +1,29 @@
 import styled from "styled-components";
 
 export const SidebarContainer = styled.div`
-  width: 250px;
   background-color: #2f3136;
   color: #fff;
   padding: 16px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  box-sizing: border-box;
+  height: 100%;
 
+  /* 데스크탑: 사이드바로 고정 폭 */
+  @media (min-width: 769px) {
+    width: 25%;
+    min-width: 250px;
+    max-width: 350px;
+  }
+
+  /* 모바일: 상단 바 (높이 고정) */
   @media (max-width: 768px) {
     width: 100%;
-    height: auto;
+    height: 60px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
   }
 `;
 
@@ -30,6 +41,13 @@ export const NewChatButton = styled.button`
   &:hover {
     background-color: #5b6eae;
   }
+
+  /* 모바일: 버튼 크기 조정 */
+  @media (max-width: 768px) {
+    margin-bottom: 0;
+    padding: 8px;
+    font-size: 0.9em;
+  }
 `;
 
 export const ChatList = styled.ul`
@@ -37,6 +55,11 @@ export const ChatList = styled.ul`
   padding: 0;
   flex: 1;
   overflow-y: auto;
+
+  /* 모바일: 숨기거나 스크롤 처리 (필요시) */
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 interface ChatItemProps {

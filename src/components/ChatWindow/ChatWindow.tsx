@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useRecoilValue } from "recoil";
-import { selectedChatState } from "../state/atoms";
-import MessageInput from "./MessageInput";
+import { selectedChatState } from "../../state/atoms";
+import MessageInput from "@/components/MessageInput/MessageInput";
 import socket from "@/api/socket";
-import { Message } from "@/api/message";
+import { Message } from "../../api/message";
+
 import {
   ChatWindowContainer,
   MessagesContainer,
@@ -17,7 +18,7 @@ const ChatWindow: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 메시지 업데이트 시 자동 스크롤
+  // 메시지 업데이트 시 자동 스크롤 (하단 정렬 상태를 보완)
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -25,16 +26,19 @@ const ChatWindow: React.FC = () => {
   }, [messages]);
 
   useEffect(() => {
-    console.log("selectedChat changed:", selectedChat);
     if (selectedChat) {
       setIsLoading(true);
+      // 채팅방 입장
       socket.emit("joinRoom", selectedChat.id);
+      // 이전 메시지 수신 이벤트 리스너 등록
       socket.on("previousMessages", (previousMessages: Message[]) => {
         setMessages(previousMessages);
         setIsLoading(false);
       });
+      // 이전 메시지 요청
       socket.emit("getMessages", selectedChat.id);
     }
+    // 새 메시지 수신 이벤트 리스너 등록
     socket.on("newMessage", (message) => {
       if (selectedChat && message.chat?.id === selectedChat.id) {
         setMessages((prev) => [...prev, message]);

@@ -2,10 +2,25 @@ import styled from "styled-components";
 
 export const InputContainer = styled.form`
   display: flex;
-  border-top: 1px solid #202225;
-  padding: 12px;
+  align-items: center;
   background-color: #40444b;
+  padding: 12px 16px;
   box-sizing: border-box;
+  width: 100%;
+
+  /* 데스크탑: 일반 흐름 내에 위치 */
+  @media (min-width: 769px) {
+    position: relative;
+  }
+
+  /* 모바일: 화면 하단에 고정 */
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+  }
 `;
 
 export const TextInput = styled.input`
@@ -16,6 +31,7 @@ export const TextInput = styled.input`
   font-size: 1em;
   background-color: #2f3136;
   color: #fff;
+  box-sizing: border-box;
 
   &:focus {
     outline: none;

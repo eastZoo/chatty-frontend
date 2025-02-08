@@ -2,7 +2,11 @@ import React, { useState, useCallback } from "react";
 import { useRecoilValue } from "recoil";
 import socket from "@/api/socket";
 import { adminInfoSelector } from "@/state/adminInfo";
-import { InputContainer, TextInput, SendButton } from "./MessageInput.styles";
+import {
+  InputContainer,
+  TextInput,
+  SendButton,
+} from "@/components/MessageInput/MessageInput.styles";
 
 interface MessageInputProps {
   chatId: string;
