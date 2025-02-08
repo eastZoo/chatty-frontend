@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useRecoilState } from "recoil";
 import { adminInfoSelector } from "@/state/adminInfo";
-import { request } from "@/api/axiosInstance";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface AuthTokenLayoutProps {
@@ -20,7 +19,8 @@ export default function AuthTokenLayout({ children }: AuthTokenLayoutProps) {
   const [adminInfo] = useRecoilState(adminInfoSelector);
 
   useEffect(() => {
-    const publicPaths = ["/login", "/join"];
+    // 공개 경로
+    const publicPaths = ["/login", "/register"];
 
     const authCheck = async () => {
       // 공개 경로인 경우 즉시 인증 처리
