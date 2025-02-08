@@ -15,15 +15,19 @@ export const MessagesContainer = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end; /* 메시지를 하단에 정렬 */
   overflow-y: auto;
   padding: 16px;
-  /* 하단 고정 MessageInput 영역 높이 고려 (예: 80px) */
-  padding-bottom: 80px;
+  padding-bottom: 10px;
+  overflow-x: hidden;
+
+  @media (max-width: 768px) {
+    padding-bottom: 65px; /* 모바일에서만 입력창 높이 고려 */
+  }
 `;
 
 export const MessageItem = styled.div`
-  padding: 10px;
+  position: relative; /* Timestamp의 절대 위치를 위해 추가 */
+  padding: 10px 60px 10px 10px; /* 오른쪽에 타임스탬프를 위한 공간 확보 */
   border-radius: 4px;
   background-color: #40444b;
   margin-bottom: 8px;
@@ -35,7 +39,14 @@ export const MessageItem = styled.div`
   }
 `;
 
-// 더미 엘리먼트는 하단 정렬 시 필요 없을 수도 있으나, 만약 자동 스크롤을 위해 사용한다면 그대로 둡니다.
+export const Timestamp = styled.div`
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 0.7em;
+  color: #b9bbbe;
+`;
+
 export const DummyDiv = styled.div`
   height: 1px;
 `;
