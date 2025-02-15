@@ -64,3 +64,10 @@ export const getUnreadCount = async (friendId: string): Promise<number> => {
   });
   return response.unreadCount;
 };
+
+export const markChatAsRead = async (data: {
+  id: string;
+  chatType: string;
+}): Promise<any> => {
+  return request({ url: `/chats/private/read`, method: "POST", data });
+};

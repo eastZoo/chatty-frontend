@@ -1,3 +1,4 @@
+// src/pages/PrivateChatListPage/PrivateChatListPage.tsx
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getPrivateChatList, Chat } from "@/api/chat";
@@ -12,6 +13,7 @@ import {
   ChatItemName,
   ChatItemLastMessage,
 } from "./PrivateChatListPage.styles";
+import UnreadBadge from "@/components/UnreadBadge/UnreadBadge";
 
 const PrivateChatListPage: React.FC = () => {
   const adminInfo = useRecoilValue(adminInfoSelector);
@@ -46,6 +48,7 @@ const PrivateChatListPage: React.FC = () => {
                 <ChatItemName>{friend.username}</ChatItemName>
                 <ChatItemLastMessage>{lastMessage}</ChatItemLastMessage>
               </ChatItemContent>
+              <UnreadBadge count={chat.unreadCount} />
             </ChatItem>
           );
         })
