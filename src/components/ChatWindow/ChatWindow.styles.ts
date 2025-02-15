@@ -4,11 +4,12 @@ export const ChatWindowContainer = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
   background-color: #36393f;
   color: #fff;
   position: relative;
-  height: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 `;
 
 export const MessagesContainer = styled.div`
@@ -21,7 +22,6 @@ export const MessagesContainer = styled.div`
   overflow-x: hidden;
 
   @media (max-width: 768px) {
-    padding-bottom: 65px; /* 모바일에서만 입력창 높이 고려 */
   }
 `;
 

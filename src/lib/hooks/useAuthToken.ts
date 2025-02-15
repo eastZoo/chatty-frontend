@@ -20,12 +20,12 @@ export default function useAuthToken() {
 
   const customLogout = async () => {
     try {
-      await request({ method: "POST", url: "/auth/admin/logout" });
+      await request({ method: "POST", url: "/auth/logout" });
     } catch (error) {
       console.error("로그아웃 API 호출 실패:", error);
     }
     setAdminInfo(null);
-    navigate("/login");
+    navigate("/");
   };
 
   // fetchAdminInfo 함수를 useCallback으로 감싸서 메모이제이션합니다.

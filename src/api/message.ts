@@ -4,6 +4,9 @@ export interface Message {
   id: string;
   content: string;
   createdAt: string;
+  chat: {
+    id: string;
+  };
   // sender 객체를 추가하여 작성자 정보(예: id, username)를 포함
   sender: {
     id: number;

@@ -12,8 +12,20 @@ code {
     monospace;
 }
 
+.custom-toast-container {
+  width: auto !important;
+  max-width: 90%;
+  margin: 0 auto;
+  /* 상하 여백 조정 */
+}
+
 .custom-toast {
-  background-color: #333;
-  color: white;
-  font-size: 12px;
+  background-color: #40444b !important;
+  color: #fff !important;
+  font-size: 0.4em;
+  padding: 8px 16px !important; /* 상하 패딩을 8px로 조정 */
+  border-radius: 8px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  margin: 4px 0 !important; /* 상하 마진을 4px로 조정 */
+  text-align: center;
 }

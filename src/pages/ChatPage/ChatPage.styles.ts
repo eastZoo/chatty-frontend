@@ -2,19 +2,13 @@ import styled from "styled-components";
 
 export const ChatPageContainer = styled.div`
   display: flex;
+  flex-direction: column;
   width: 100vw;
   height: 100vh;
   background-color: #36393f;
-  overflow: hidden;
-
-  @media (min-width: 769px) {
-    flex-direction: row;
-  }
 
   @media (max-width: 768px) {
-    flex-direction: column;
-    padding-top: 60px; /* 고정 헤더 높이 */
-    padding-bottom: 10px; /* 고정 MessageInput 높이 + 여유 */
+    padding-top: 50px; /* Adjust for fixed GlobalHeader */
   }
 `;
 

@@ -1,15 +1,17 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import socket from "@/api/socket";
 import { adminInfoSelector } from "@/state/adminInfo";
 import { InputContainer, TextInput, SendButton } from "./MessageInput.styles";
+import { selectedChatState } from "@/state/atoms";
 
 interface MessageInputProps {
-  chatId: string;
+  chatId?: string;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
   const [content, setContent] = useState("");
+  const [selectedChat, setSelectedChat] = useRecoilState(selectedChatState);
   const adminInfo = useRecoilValue(adminInfoSelector);
   // 입력 필드에 대한 ref 생성
   const inputRef = useRef<HTMLInputElement>(null);
@@ -24,6 +26,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
           content,
           userId: adminInfo.id,
           username: adminInfo.username,
+          chatType: selectedChat?.type,
         });
         setContent("");
         // 메시지 전송 후 입력 필드에 다시 포커스 설정

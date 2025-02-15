@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useRecoilValue } from "recoil";
 import { selectedChatState } from "../../state/atoms";
 import MessageInput from "@/components/MessageInput/MessageInput";
@@ -8,7 +8,6 @@ import {
   ChatWindowContainer,
   MessagesContainer,
   MessageItem,
-  DummyDiv,
   Timestamp,
 } from "./ChatWindow.styles";
 
@@ -18,11 +17,17 @@ const ChatWindow: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 헬퍼 함수: ISO 날짜 문자열을 "YYYY-MM-DD 오후 HH:MM" 형식으로 포맷합니다.
+  // 안정적인 chatId를 추출
+  const chatId = selectedChat?.id;
+  const chatType = selectedChat?.type;
+
+  // 현재 가입한 방을 추적하는 ref
+  const joinedRoomRef = useRef<string | null>(null);
+
+  // ISO 날짜 포맷 함수
   const formatTimestamp = (timestamp: string): string => {
     const date = new Date(timestamp);
-    // 9시간 추가
-    date.setHours(date.getHours() + 9);
+    date.setHours(date.getHours() + 9); // 한국 시간
     const year = date.getFullYear();
     const month = ("0" + (date.getMonth() + 1)).slice(-2);
     const day = ("0" + date.getDate()).slice(-2);
@@ -35,39 +40,49 @@ const ChatWindow: React.FC = () => {
     return `${dateStr} ${timeStr}`;
   };
 
-  // 새로운 메시지가 추가될 때 스크롤을 하단으로 이동
+  // 자동 스크롤
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
+  // 소켓 이벤트 관리: 의존성을 chatId만 사용
   useEffect(() => {
-    if (selectedChat) {
-      setIsLoading(true);
-      socket.emit("joinRoom", selectedChat.id);
-      socket.on("previousMessages", (previousMessages: Message[]) => {
-        setMessages(previousMessages);
-        setIsLoading(false);
-      });
-      socket.emit("getMessages", selectedChat.id);
-    }
-    socket.on("newMessage", (message) => {
-      if (selectedChat && message.chat?.id === selectedChat.id) {
-        setMessages((prev) => [...prev, message]);
+    if (!chatId) return;
+
+    setIsLoading(true);
+    if (joinedRoomRef.current !== chatId) {
+      if (joinedRoomRef.current) {
+        socket.emit("leaveRoom", joinedRoomRef.current);
       }
-    });
+      joinedRoomRef.current = chatId;
+      socket.emit("joinRoom", chatId);
+    }
+
+    const handlePreviousMessages = (previousMessages: Message[]) => {
+      setMessages(previousMessages);
+      setIsLoading(false);
+    };
+
+    const handleNewMessage = (message) => {
+      console.log("message!!!", message);
+      if (message.privateChat?.id === chatId) {
+        setMessages((prev) => [...prev, message]); // Append the new message
+      }
+    };
+
+    socket.on("previousMessages", handlePreviousMessages);
+    socket.emit("getMessages", { roomId: chatId, chatType: chatType });
+    socket.on("newMessage", handleNewMessage);
 
     return () => {
-      if (selectedChat) {
-        socket.emit("leaveRoom", selectedChat.id);
-      }
-      socket.off("newMessage");
-      socket.off("previousMessages");
+      socket.off("previousMessages", handlePreviousMessages);
+      socket.off("newMessage", handleNewMessage);
     };
-  }, [selectedChat]);
+  }, [chatId]);
 
-  if (!selectedChat) {
+  if (!selectedChat || !chatId) {
     return (
       <ChatWindowContainer>
         <div style={{ padding: "10px" }}>채팅을 선택해주세요.</div>
@@ -78,7 +93,6 @@ const ChatWindow: React.FC = () => {
   return (
     <ChatWindowContainer>
       <MessagesContainer>
-        {/* 플렉스 푸셔: 내용이 적을 경우 하단에 고정 */}
         <div style={{ flexGrow: 1 }} />
         {messages.map((msg: Message) => (
           <MessageItem key={msg.id}>
@@ -88,7 +102,7 @@ const ChatWindow: React.FC = () => {
         ))}
         <div ref={messagesEndRef} />
       </MessagesContainer>
-      <MessageInput chatId={selectedChat.id} />
+      <MessageInput chatId={chatId} />
     </ChatWindowContainer>
   );
 };
