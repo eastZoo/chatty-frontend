@@ -27,7 +27,7 @@ const ChatWindow: React.FC = () => {
   // ISO 날짜 포맷 함수
   const formatTimestamp = (timestamp: string): string => {
     const date = new Date(timestamp);
-    date.setHours(date.getHours() + 9); // 한국 시간
+
     const year = date.getFullYear();
     const month = ("0" + (date.getMonth() + 1)).slice(-2);
     const day = ("0" + date.getDate()).slice(-2);
