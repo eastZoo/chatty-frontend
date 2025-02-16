@@ -1,3 +1,4 @@
+import { readAccessToken } from "@/utils/authFunctions";
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
 // console.log("process.env.REACT_APP_API_URL", process.env.REACT_APP_API_URL);
@@ -14,6 +15,14 @@ api.interceptors.request.use(
   async (config) => {
     const ip = localStorage.getItem("userIP");
     if (ip) config.headers.ip = ip;
+
+    const accessToken = readAccessToken();
+ 
+
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

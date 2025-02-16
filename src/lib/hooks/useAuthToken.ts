@@ -9,9 +9,11 @@ export default function useAuthToken() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const customLogin = async (adminInfo: any) => {
+  const customLogin = async (data: any) => {
     try {
-      setAdminInfo(adminInfo);
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      setAdminInfo(data.adminInfo);
       navigate("/");
     } catch (e: any) {
       console.error("로그인 실패:", e.message);

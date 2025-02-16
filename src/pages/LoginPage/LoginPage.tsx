@@ -20,7 +20,7 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const { customLogin } = useAuthToken();
 
-  const mutation = useMutation({
+  const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: async (res: any) => {
       console.log(res);
@@ -42,7 +42,7 @@ const LoginPage: React.FC = () => {
       return;
     }
     const credentials: LoginRequest = { username, password };
-    mutation.mutate(credentials);
+    loginMutation.mutate(credentials);
   };
 
   return (
@@ -61,7 +61,7 @@ const LoginPage: React.FC = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <SubmitButton type="submit" disabled={mutation.isPending}>
+        <SubmitButton type="submit" disabled={loginMutation.isPending}>
           로그인
         </SubmitButton>
         <LinkText>
