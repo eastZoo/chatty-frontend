@@ -36,6 +36,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
   const [content, setContent] = useState("");
   const [selectedChat] = useRecoilState(selectedChatState);
   const adminInfo = useRecoilValue(adminInfoSelector);
+  const [isSending, setIsSending] = useState(false);
 
   // 첨부 파일 상태
   const [codeAttachments, setCodeAttachments] = useState<CodeAttachment[]>([]);
@@ -91,8 +92,10 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
         codeAttachments.length > 0 ||
         fileAttachments.length > 0;
 
-      if (hasContent) {
-        socket.emit("sendMessage", {
+      if (hasContent && !isSending) {
+        setIsSending(true);
+
+        const messageData = {
           chatId,
           content,
           userId: adminInfo.id,
@@ -108,7 +111,10 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
             codeAttachments.length > 0 ? codeAttachments : undefined,
           fileAttachments:
             fileAttachments.length > 0 ? fileAttachments : undefined,
-        });
+        };
+
+        console.log("메시지 전송 중:", messageData);
+        socket.emit("sendMessage", messageData);
 
         setContent("");
         setCodeAttachments([]);
@@ -118,6 +124,9 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
         if (inputRef.current) {
           inputRef.current.focus();
         }
+
+        // 전송 상태 리셋 (실제로는 서버 응답을 받으면 리셋해야 함)
+        setTimeout(() => setIsSending(false), 1000);
       }
     },
     [
@@ -127,6 +136,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
       codeAttachments,
       fileAttachments,
       selectedChat?.type,
+      isSending,
     ]
   );
 
@@ -155,10 +165,13 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
 
   // 코드 전송 - 바로 메시지로 전송
   const handleSendCode = useCallback(() => {
-    if (codeInput.trim()) {
+    if (codeInput.trim() && !isSending) {
+      setIsSending(true);
+
       // 코드를 ```로 시작하는 형식으로 변환 (서버에서 파싱 가능)
       const formattedCode = `\`\`\`${selectedLanguage}\n${codeInput.trim()}\n\`\`\``;
 
+      console.log("코드 전송 중:", formattedCode);
       // 바로 메시지로 전송
       socket.emit("sendMessage", {
         chatId,
@@ -171,8 +184,18 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
 
       setCodeInput("");
       // 코드 모드 유지 - 전송 후에도 코드 모드에서 계속 작업 가능
+
+      // 전송 상태 리셋
+      setTimeout(() => setIsSending(false), 1000);
     }
-  }, [codeInput, selectedLanguage, chatId, adminInfo, selectedChat?.type]);
+  }, [
+    codeInput,
+    selectedLanguage,
+    chatId,
+    adminInfo,
+    selectedChat?.type,
+    isSending,
+  ]);
 
   // 코드 첨부 처리 (기존 모달용)
   const handleAddCode = useCallback(() => {
@@ -415,11 +438,14 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
         <SendButton
           type="submit"
           disabled={
-            activeFeature === "code"
+            isSending ||
+            (activeFeature === "code"
               ? !codeInput.trim()
-              : !content.trim() && !hasAttachments
+              : !content.trim() && !hasAttachments)
           }
-        ></SendButton>
+        >
+          {isSending ? "전송중..." : ""}
+        </SendButton>
       </InputContainer>
 
       <S.HiddenFileInput

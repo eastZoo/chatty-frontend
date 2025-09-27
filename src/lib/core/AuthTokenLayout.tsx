@@ -3,6 +3,7 @@ import useAuthToken from "@/lib/hooks/useAuthToken";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import socket from "@/lib/api/socket";
 
 interface AuthTokenLayoutProps {
   children: React.ReactNode;
@@ -30,6 +31,15 @@ export default function AuthTokenLayout({ children }: AuthTokenLayoutProps) {
         // 인증 체크와 어드민 정보 동시 요청
         await Promise.all([fetchAdminInfo()]);
 
+        // 인증 성공 시 소켓 연결
+        if (!socket.connected) {
+          socket.auth = {
+            token: localStorage.getItem("accessToken"),
+          };
+          socket.connect();
+          console.log("소켓 연결 시도");
+        }
+
         setAuthorized(true);
       } catch (error) {
         console.error("인증 체크 실패:", error);
@@ -40,6 +50,16 @@ export default function AuthTokenLayout({ children }: AuthTokenLayoutProps) {
 
     authCheck();
   }, [pathname, navigate, fetchAdminInfo]);
+
+  // 컴포넌트 언마운트 시 소켓 연결 해제
+  useEffect(() => {
+    return () => {
+      if (socket.connected) {
+        socket.disconnect();
+        console.log("소켓 연결 해제");
+      }
+    };
+  }, []);
 
   if (!authorized) {
     return <LoadingSpinner />;

@@ -7,12 +7,35 @@ const socket = io(
   {
     path: "/socket.io",
     transports: ["websocket"],
-    autoConnect: true,
+    autoConnect: false, // 수동으로 연결하도록 변경
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionAttempts: 5,
+    timeout: 20000,
+    auth: {
+      token: localStorage.getItem("accessToken"),
+    },
   }
 );
 
 socket.on("connect", () => {
   console.log("Socket connected:", socket.id);
+});
+
+socket.on("disconnect", (reason) => {
+  console.log("Socket disconnected:", reason);
+});
+
+socket.on("reconnect", (attemptNumber) => {
+  console.log("Socket reconnected after", attemptNumber, "attempts");
+});
+
+socket.on("reconnect_error", (error) => {
+  console.error("Socket reconnection error:", error);
+});
+
+socket.on("reconnect_failed", () => {
+  console.error("Socket reconnection failed");
 });
 
 export default socket;

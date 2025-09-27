@@ -6,6 +6,7 @@ import { adminInfoSelector } from "@/store/adminInfo";
 import MessageInput from "@/components/MessageInput/MessageInput";
 import CodeBlock from "@/components/CodeBlock/CodeBlock";
 import FileAttachment from "@/components/FileAttachment/FileAttachment";
+import MessageStatus from "@/components/MessageStatus/MessageStatus";
 import socket from "@/lib/api/socket";
 import { type Message } from "@/lib/api/message";
 import { markChatAsRead } from "@/lib/api/chat";
@@ -129,9 +130,32 @@ const ChatWindow: React.FC = () => {
     };
 
     const handleNewMessage = (message: Message) => {
-      console.log("message", message);
-      if (chatId && message.privateChat?.id === chatId) {
-        setMessages((prev) => [...prev, message]);
+      console.log("새 메시지 수신:", message);
+      // 현재 채팅방의 메시지인지 확인
+      if (
+        chatId &&
+        (message.privateChat?.id === chatId || message.chat?.id === chatId)
+      ) {
+        setMessages((prev) => {
+          // 중복 메시지 방지 (같은 ID가 있는지 확인)
+          const messageExists = prev.some((msg) => msg.id === message.id);
+          if (messageExists) {
+            console.log("중복 메시지 무시:", message.id);
+            return prev;
+          }
+          console.log("메시지 추가:", message.id);
+          return [...prev, message];
+        });
+      }
+    };
+
+    // 채팅방 목록 업데이트 이벤트 처리
+    const handleChatListUpdate = (data: any) => {
+      console.log("채팅방 목록 업데이트:", data);
+      // 현재 채팅방과 관련된 업데이트인지 확인
+      if (data.chatId === chatId || data.type === "read") {
+        // 필요시 채팅방 정보 갱신
+        console.log("현재 채팅방 업데이트 필요");
       }
     };
 
@@ -141,6 +165,7 @@ const ChatWindow: React.FC = () => {
       chatType: selectedChat?.type,
     });
     socket.on("newMessage", handleNewMessage);
+    socket.on("chatListUpdate", handleChatListUpdate);
 
     return () => {
       console.log("Cleanup: leaving room", chatId);
@@ -150,6 +175,7 @@ const ChatWindow: React.FC = () => {
       }
       socket.off("previousMessages", handlePreviousMessages);
       socket.off("newMessage", handleNewMessage);
+      socket.off("chatListUpdate", handleChatListUpdate);
     };
   }, [chatId]);
 
@@ -299,9 +325,18 @@ const ChatWindow: React.FC = () => {
                       />
                     ))}
 
-                  <Timestamp isOwn={isOwn}>
-                    {formatTimestamp(msg.createdAt || "")}
-                  </Timestamp>
+                  {isOwn && (
+                    <MessageStatus
+                      status="sent"
+                      timestamp={formatTimestamp(msg.createdAt || "")}
+                    />
+                  )}
+
+                  {!isOwn && (
+                    <Timestamp isOwn={isOwn}>
+                      {formatTimestamp(msg.createdAt || "")}
+                    </Timestamp>
+                  )}
                 </MessageItem>
               );
             })}
