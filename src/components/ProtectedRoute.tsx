@@ -1,5 +1,5 @@
 // src/components/ProtectedRoute.tsx
-import { adminInfoSelector } from "@/state/adminInfo";
+import { adminInfoSelector } from "@/store/adminInfo";
 
 import React from "react";
 import { Navigate } from "react-router-dom";

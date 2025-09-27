@@ -1,52 +1,74 @@
 import React from "react";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 import useAuthToken from "@/lib/hooks/useAuthToken";
 
 const SettingsContainer = styled.div`
-  padding: 16px;
-  background-color: #36393f;
-  color: #fff;
-  min-height: calc(100vh - 60px); /* 하단 탭바 높이 고려 */
+  padding: 20px;
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.text};
+  min-height: 100%;
   box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 
   @media (max-width: 768px) {
-    padding: 12px;
+    padding: 16px;
   }
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.2em;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #40444b;
-  padding-bottom: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const SettingList = styled.ul`
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0 0 32px 0;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+  overflow: hidden;
 `;
 
 const SettingItem = styled.li`
-  padding: 12px 8px;
-  border-bottom: 1px solid #40444b;
+  padding: 16px 20px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   display: flex;
   align-items: center;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  min-height: 56px;
+
+  &:last-child {
+    border-bottom: none;
+  }
 
   &:hover {
-    background-color: #40444b;
+    background: ${({ theme }) => theme.colors.bgTertiary};
+  }
+
+  &:active {
+    background: ${({ theme }) => theme.colors.border};
   }
 `;
 
 const SettingItemText = styled.span`
   flex: 1;
-  font-size: 1em;
+  font-size: 16px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const SettingsPage: React.FC = () => {
   const { customLogout } = useAuthToken();
+  const navigate = useNavigate();
 
   return (
     <SettingsContainer>
@@ -59,6 +81,14 @@ const SettingsPage: React.FC = () => {
           <SettingItemText>로그아웃</SettingItemText>
         </SettingItem>
       </SettingList>
+
+      <SectionTitle>화면 설정</SectionTitle>
+      <SettingList>
+        <SettingItem onClick={() => navigate("/settings/display")}>
+          <SettingItemText>화면 설정</SettingItemText>
+        </SettingItem>
+      </SettingList>
+
       <SectionTitle>알림</SectionTitle>
       <SettingList>
         <SettingItem onClick={() => console.log("알림 설정 페이지 이동")}>

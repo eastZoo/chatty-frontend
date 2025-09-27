@@ -2,8 +2,6 @@ import { useEffect } from "react";
 import useAuthToken from "@/lib/hooks/useAuthToken";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { useRecoilState } from "recoil";
-import { adminInfoSelector } from "@/state/adminInfo";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface AuthTokenLayoutProps {
@@ -16,7 +14,6 @@ export default function AuthTokenLayout({ children }: AuthTokenLayoutProps) {
   const { fetchAdminInfo } = useAuthToken();
 
   const [authorized, setAuthorized] = useState(false);
-  const [adminInfo] = useRecoilState(adminInfoSelector);
 
   useEffect(() => {
     // 공개 경로

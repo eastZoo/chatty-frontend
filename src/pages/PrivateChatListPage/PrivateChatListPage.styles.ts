@@ -1,63 +1,78 @@
 import styled from "styled-components";
 
 export const ChatListContainer = styled.div`
-  padding: 16px;
-  background-color: #36393f;
-  color: #fff;
-  min-height: calc(100vh - 110px); /* 하단 탭바 고려 */
+  padding: 20px;
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.text};
+  min-height: 100%;
   box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 
   @media (max-width: 768px) {
-    padding: 12px;
+    padding: 16px;
   }
 `;
 
 export const ChatItem = styled.div`
   display: flex;
   align-items: center;
-  padding: 12px;
-  background-color: #40444b;
-  border-radius: 8px;
+  padding: 16px;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-radius: ${({ theme }) => theme.radius.lg};
   margin-bottom: 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: ${({ theme }) => theme.shadows.sm};
 
   &:hover {
-    background-color: #484e57;
+    background: ${({ theme }) => theme.colors.bgTertiary};
+    transform: translateY(-2px);
+    box-shadow: ${({ theme }) => theme.shadows.md};
+  }
+
+  &:active {
+    transform: translateY(-1px);
   }
 `;
 
 export const ChatItemAvatar = styled.div`
-  width: 50px;
-  height: 50px;
-  background-color: #7289da;
-  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  background: ${({ theme }) => theme.colors.primary};
+  border-radius: ${({ theme }) => theme.radius.full};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #fff;
-  margin-right: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-right: 16px;
+  flex-shrink: 0;
+  box-shadow: ${({ theme }) => theme.shadows.md};
 `;
 
 export const ChatItemContent = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
 `;
 
 export const ChatItemName = styled.div`
-  font-size: 1.1em;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 600;
   margin-bottom: 4px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 export const ChatItemLastMessage = styled.div`
-  font-size: 0.9em;
-  color: #b9bbbe;
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textSecondary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 80%;
+  max-width: 100%;
+  line-height: 1.4;
 `;

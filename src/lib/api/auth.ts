@@ -1,5 +1,5 @@
 // src/api/auth.ts
-import { ResponseType } from "@/types/response.types";
+import { type ResponseType } from "@/lib/types/response.types";
 import { request } from "./axiosInstance";
 
 export interface LoginResponse {

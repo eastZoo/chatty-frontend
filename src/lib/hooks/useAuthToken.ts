@@ -1,8 +1,8 @@
 import { useSetRecoilState } from "recoil";
 import { useEffect, useCallback } from "react";
-import { request } from "@/api/axiosInstance";
+import { request } from "@/lib/api/axiosInstance";
 import { useLocation, useNavigate } from "react-router";
-import { adminInfoSelector } from "@/state/adminInfo";
+import { adminInfoSelector } from "@/store/adminInfo";
 
 export default function useAuthToken() {
   const setAdminInfo = useSetRecoilState(adminInfoSelector);

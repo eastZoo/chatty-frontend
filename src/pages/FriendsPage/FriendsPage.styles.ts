@@ -1,14 +1,16 @@
 import styled from "styled-components";
 
 export const FriendsContainer = styled.div`
-  padding: 16px;
-  background-color: #36393f;
-  color: #fff;
-  min-height: calc(100vh - 110px); /* 하단 탭바 고려 */
+  padding: 20px;
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.text};
+  min-height: 100%;
   box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 
   @media (max-width: 768px) {
-    padding: 12px;
+    padding: 16px;
   }
 `;
 
@@ -16,64 +18,71 @@ export const FriendsContainer = styled.div`
 export const ProfileCard = styled.div`
   display: flex;
   align-items: center;
-  padding: 16px;
-  background-color: #40444b;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  padding: 20px;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  margin-bottom: 20px;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+  border: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 export const ProfileAvatar = styled.div`
   width: 60px;
   height: 60px;
-  background-color: #7289da;
-  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.primary};
+  border-radius: ${({ theme }) => theme.radius.full};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+  color: #ffffff;
   margin-right: 16px;
+  box-shadow: ${({ theme }) => theme.shadows.md};
 `;
 
 export const ProfileInfo = styled.div`
   display: flex;
   flex-direction: column;
+  flex: 1;
 `;
 
 export const ProfileName = styled.div`
-  font-size: 1.2em;
-  font-weight: bold;
+  font-size: 18px;
+  font-weight: 600;
   margin-bottom: 4px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 export const ProfileStatus = styled.div`
-  font-size: 0.9em;
-  color: #b9bbbe;
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 /* 구분선 */
 export const Divider = styled.div`
   height: 1px;
-  background-color: #40444b;
-  margin: 16px 0;
+  background: ${({ theme }) => theme.colors.border};
+  margin: 20px 0;
 `;
 
 export const Section = styled.div`
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 `;
 
 export const SectionTitle = styled.h3`
-  font-size: 1.2em;
-  margin-bottom: 12px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #40444b;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 export const FriendList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   height: auto;
   overflow-y: auto;
 `;
@@ -81,78 +90,118 @@ export const FriendList = styled.div`
 export const FriendItem = styled.div`
   display: flex;
   align-items: center;
-  padding: 8px;
-  background-color: #40444b;
-  border-radius: 4px;
+  padding: 16px;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.bgTertiary};
+    transform: translateY(-1px);
+    box-shadow: ${({ theme }) => theme.shadows.md};
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 `;
 
 export const FriendAvatar = styled.div`
-  width: 40px;
-  height: 40px;
-  background-color: #7289da;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  background: ${({ theme }) => theme.colors.secondary};
+  border-radius: ${({ theme }) => theme.radius.full};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1em;
-  font-weight: bold;
-  margin-right: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-right: 16px;
   flex-shrink: 0;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
 `;
 
 export const FriendName = styled.div`
   flex: 1;
-  font-size: 1em;
+  font-size: 16px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 export const ActionButton = styled.button`
-  background-color: #7289da;
+  background: ${({ theme }) => theme.colors.primary};
   border: none;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 4px;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: ${({ theme }) => theme.radius.md};
   cursor: pointer;
-  font-size: 0.9em;
+  font-size: 14px;
+  font-weight: 500;
   margin-left: 8px;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  min-height: 32px;
 
   &:hover {
-    background-color: #5b6eae;
+    background: ${({ theme }) => theme.colors.primary};
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;
 
 export const InputContainer = styled.div`
   display: flex;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 12px;
+  gap: 8px;
 `;
 
 export const SearchInput = styled.input`
   flex: 1;
-  padding: 8px;
-  margin-right: 8px;
-  border-radius: 4px;
-  border: none;
-  font-size: 1em;
-  background-color: #40444b;
-  color: #fff;
+  padding: 12px 16px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  font-size: 16px;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  color: ${({ theme }) => theme.colors.text};
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  }
 
   &::placeholder {
-    color: #b9bbbe;
+    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
 export const SearchButton = styled.button`
-  background-color: #43b581;
+  background: ${({ theme }) => theme.colors.secondary};
   border: none;
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 4px;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: ${({ theme }) => theme.radius.md};
   cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.2s;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-height: 44px;
 
   &:hover {
-    background-color: #3aa67c;
+    background: ${({ theme }) => theme.colors.secondary};
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;

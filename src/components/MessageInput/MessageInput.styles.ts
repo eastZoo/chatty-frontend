@@ -2,59 +2,87 @@ import styled from "styled-components";
 
 export const InputContainer = styled.form`
   display: flex;
-  align-items: center;
-  background-color: #40444b;
-  padding: 12px 16px;
+  align-items: flex-end;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 12px 20px;
   box-sizing: border-box;
   width: 100%;
-
-  /* 데스크탑: 일반 흐름 내에 위치 */
-  @media (min-width: 769px) {
-    position: relative;
-  }
-
-  /* 모바일: 화면 하단에 고정 */
-  @media (max-width: 768px) {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-  }
+  gap: 12px;
+  /* iOS 안전 영역 대응 */
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0; /* 축소되지 않도록 */
 `;
 
 export const TextInput = styled.input`
   flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: 4px;
-  font-size: 1em;
-  background-color: #2f3136;
-  color: #fff;
+  padding: 12px 16px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.xl};
+  font-size: 16px;
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.text};
   box-sizing: border-box;
+  line-height: 1.4;
+  max-height: 100px;
+  min-height: 44px;
+  resize: none;
+  /* iOS Safari input zoom 방지 */
+  font-size: 16px;
 
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 2px #7289da;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
   }
 
   &::placeholder {
-    color: #b9bbbe;
+    color: ${({ theme }) => theme.colors.textSecondary};
   }
+
+  /* 모바일에서 터치 최적화 */
+  -webkit-appearance: none;
+  appearance: none;
 `;
 
-export const SendButton = styled.button`
-  background-color: #7289da;
+export const SendButton = styled.button<{ disabled?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: ${({ theme, disabled }) =>
+    disabled ? theme.colors.bgTertiary : theme.colors.primary};
   border: none;
-  border-radius: 4px;
-  color: #fff;
-  padding: 10px 16px;
-  margin-left: 8px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.2s;
+  border-radius: ${({ theme }) => theme.radius.full};
+  color: ${({ theme, disabled }) =>
+    disabled ? theme.colors.textSecondary : "#FFFFFF"};
+  cursor: ${({ disabled }) => (disabled ? "not-allowed" : "pointer")};
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 
-  &:hover {
-    background-color: #5b6eae;
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.primary};
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+
+  /* 전송 아이콘 */
+  &::after {
+    content: "→";
+    font-size: 16px;
+    font-weight: bold;
   }
 `;

@@ -7,7 +7,7 @@ import {
 } from "./MobileHeader.styles";
 import { FiMenu } from "react-icons/fi";
 import { useRecoilValue } from "recoil";
-import { selectedChatState } from "@/state/atoms";
+import { selectedChatState } from "@/store/atoms";
 
 interface MobileHeaderProps {
   onHamburgerClick: () => void;

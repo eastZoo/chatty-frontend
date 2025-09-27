@@ -1,9 +1,9 @@
-import axios, { AxiosError, AxiosRequestConfig } from "axios";
+import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 
-// console.log("process.env.REACT_APP_API_URL", process.env.REACT_APP_API_URL);
+// console.log("import.meta.env.VITE_API_BASE_URL", import.meta.env.VITE_API_BASE_URL);
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -28,7 +28,7 @@ api.interceptors.response.use(
 
       try {
         await axios.post(
-          `${process.env.REACT_APP_API_URL}/auth/refresh-token`,
+          `${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`,
           {},
           {
             withCredentials: true,

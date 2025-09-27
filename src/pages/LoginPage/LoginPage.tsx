@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { login, LoginRequest } from "../../api/auth";
+import { login, type LoginRequest } from "@/lib/api/auth";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { setToken } from "../../api/axiosInstance";
 import useAuthToken from "@/lib/hooks/useAuthToken";
 import {
   LoginContainer,

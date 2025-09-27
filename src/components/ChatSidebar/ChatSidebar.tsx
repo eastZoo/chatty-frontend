@@ -1,8 +1,13 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getChats, createChat, updateChatTitle, Chat } from "@/api/chat";
+import {
+  getChats,
+  createChat,
+  updateChatTitle,
+  type Chat,
+} from "@/lib/api/chat";
 import { useRecoilState } from "recoil";
-import { selectedChatState } from "@/state/atoms";
+import { selectedChatState } from "@/store/atoms";
 import {
   SidebarContainer,
   NewChatButton,

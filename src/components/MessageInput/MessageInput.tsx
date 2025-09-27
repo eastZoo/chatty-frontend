@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
-import socket from "@/api/socket";
-import { adminInfoSelector } from "@/state/adminInfo";
+import socket from "@/lib/api/socket";
+import { adminInfoSelector } from "@/store/adminInfo";
 import { InputContainer, TextInput, SendButton } from "./MessageInput.styles";
-import { selectedChatState } from "@/state/atoms";
+import { selectedChatState } from "@/store/atoms";
 
 interface MessageInputProps {
   chatId?: string;
@@ -52,13 +52,14 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
   return (
     <InputContainer onSubmit={handleSubmit}>
       <TextInput
-        ref={inputRef} // ref 연결
+        ref={inputRef}
         type="text"
         placeholder="메시지를 입력하세요..."
         value={content}
         onChange={handleChange}
+        maxLength={1000}
       />
-      <SendButton type="submit">전송</SendButton>
+      <SendButton type="submit" disabled={!content.trim()}></SendButton>
     </InputContainer>
   );
 };

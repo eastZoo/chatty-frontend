@@ -1,9 +1,9 @@
 // src/pages/PrivateChatListPage/PrivateChatListPage.tsx
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getPrivateChatList, Chat } from "@/api/chat";
+import { getPrivateChatList } from "@/lib/api/chat";
 import { useRecoilValue } from "recoil";
-import { adminInfoSelector } from "@/state/adminInfo";
+import { adminInfoSelector } from "@/store/adminInfo";
 import { useNavigate } from "react-router-dom";
 import {
   ChatListContainer,

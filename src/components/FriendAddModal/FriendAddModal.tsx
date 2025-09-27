@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { sendFriendRequest } from "../../api/friends";
+import { sendFriendRequest } from "@/lib/api/friends";
 import { toast } from "react-toastify";
 import { FiCopy } from "react-icons/fi";
 

@@ -6,7 +6,7 @@ import {
   sendFriendRequest,
   acceptFriendRequest,
   rejectFriendRequest,
-} from "../../api/friends";
+} from "@/lib/api/friends";
 import {
   FriendsContainer,
   ProfileCard,
@@ -25,9 +25,8 @@ import {
 } from "./FriendsPage.styles";
 import { toast } from "react-toastify";
 import { useRecoilValue } from "recoil";
-import { adminInfoSelector } from "@/state/adminInfo";
+import { adminInfoSelector } from "@/store/adminInfo";
 import { useNavigate } from "react-router-dom";
-import UnreadBadge from "@/components/UnreadBadge/UnreadBadge";
 import FriendProfileModal from "@/components/FriendProfileModal/FriendProfileModal";
 
 interface Friend {

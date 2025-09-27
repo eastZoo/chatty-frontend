@@ -8,13 +8,16 @@ const NavbarContainer = styled.div`
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  background-color: #2f3136;
+  height: 80px;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border-top: 1px solid #40444b;
   z-index: 1000;
+  /* iOS 안전 영역 대응 */
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 `;
 
 const NavItem = styled.div<{ active: boolean }>`
@@ -22,9 +25,34 @@ const NavItem = styled.div<{ active: boolean }>`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: ${({ active }) => (active ? "#7289da" : "#b9bbbe")};
-  font-size: 0.5em;
+  padding: 8px 12px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  color: ${({ active, theme }) =>
+    active ? theme.colors.primary : theme.colors.textSecondary};
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 60px;
+
+  &:active {
+    transform: scale(0.95);
+    background: ${({ theme }) => theme.colors.bgTertiary};
+  }
+
+  svg {
+    margin-bottom: 4px;
+    transition: all 0.2s ease;
+  }
+
+  ${({ active, theme }) =>
+    active &&
+    `
+    background: ${theme.colors.bgTertiary};
+    svg {
+      transform: scale(1.1);
+    }
+  `}
 `;
 
 const BottomNavbar: React.FC = () => {
@@ -49,9 +77,9 @@ const BottomNavbar: React.FC = () => {
         if (tab.path === "/") {
           // 홈 탭은 정확히 "/" 경로일 때만 활성화
           active = location.pathname === "/";
-        } else if (tab.path === "/chat/private") {
-          // 대화 탭은 /chat/private로 시작하는 경로일 때 활성화
-          active = location.pathname.startsWith("/chat/private");
+        } else if (tab.path === "/chat") {
+          // 대화 탭은 /chat으로 시작하는 경로일 때 활성화
+          active = location.pathname.startsWith("/chat");
         } else {
           // 나머지 탭은 정확한 경로 매칭
           active = location.pathname === tab.path;

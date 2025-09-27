@@ -7,8 +7,8 @@ import { ChatPageContainer, Overlay } from "./ChatPage.styles";
 import { useMediaQuery } from "react-responsive";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRecoilState } from "recoil";
-import { selectedChatState } from "@/state/atoms";
-import { createChat, getChats } from "../../api/chat";
+import { selectedChatState } from "@/store/atoms";
+import { createChat, getChats } from "@/lib/api/chat";
 
 const ChatPage: React.FC = () => {
   const isMobile = useMediaQuery({ maxWidth: 768 });

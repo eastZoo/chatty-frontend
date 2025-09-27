@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { register, RegisterRequest } from "../../api/auth";
+import { register, type RegisterRequest } from "@/lib/api/auth";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import {

@@ -1,21 +1,28 @@
 // src/components/ChatWindow/ChatWindow.tsx
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useRecoilValue } from "recoil";
-import { selectedChatState } from "../../state/atoms";
+import { selectedChatState } from "@/store/atoms";
+import { adminInfoSelector } from "@/store/adminInfo";
 import MessageInput from "@/components/MessageInput/MessageInput";
-import socket from "@/api/socket";
-import { Message } from "../../api/message";
-import { markChatAsRead } from "../../api/chat";
+import socket from "@/lib/api/socket";
+import { type Message } from "@/lib/api/message";
+import { markChatAsRead } from "@/lib/api/chat";
 import {
   ChatWindowContainer,
   MessagesContainer,
   MessageItem,
-  DummyDiv,
+  MessageBubble,
+  MessageHeader,
+  SenderName,
   Timestamp,
+  EmptyChatContainer,
+  EmptyChatIcon,
+  EmptyChatText,
 } from "./ChatWindow.styles";
 
 const ChatWindow: React.FC = () => {
   const selectedChat = useRecoilValue(selectedChatState);
+  const adminInfo = useRecoilValue(adminInfoSelector);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -42,12 +49,12 @@ const ChatWindow: React.FC = () => {
     return `${dateStr} ${timeStr}`;
   };
 
-  // 자동 스크롤
+  // 자동 스크롤 - 메시지가 추가될 때만 아래로 스크롤
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && messages.length > 0) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages.length]); // messages.length만 의존성으로 사용
 
   // 소켓 이벤트 관리: 의존성을 chatId만 사용
   useEffect(() => {
@@ -73,11 +80,12 @@ const ChatWindow: React.FC = () => {
     }
 
     // 읽지 않은 상태 업데이트: 채팅창이 열리면 현재 시각으로 읽음 상태를 업데이트
-    markChatAsRead({ id: chatId, chatType: selectedChat?.type }).catch(
-      (error) => {
-        console.error("Error marking chat as read:", error);
-      }
-    );
+    markChatAsRead({
+      id: chatId || "",
+      chatType: selectedChat?.type || "",
+    }).catch((error) => {
+      console.error("Error marking chat as read:", error);
+    });
     const handlePreviousMessages = (previousMessages: Message[]) => {
       setMessages(previousMessages);
       setIsLoading(false);
@@ -108,10 +116,33 @@ const ChatWindow: React.FC = () => {
     };
   }, [chatId]);
 
+  console.log("messages", messages);
+  // 현재 사용자 ID
+  const currentUserId = adminInfo?.id;
+
   if (!selectedChat) {
     return (
       <ChatWindowContainer>
-        <div style={{ padding: "10px" }}>채팅을 선택해주세요.</div>
+        <EmptyChatContainer>
+          <EmptyChatIcon>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </EmptyChatIcon>
+          <EmptyChatText>
+            채팅을 선택해주세요
+            <br />
+            대화를 시작하려면 친구 목록에서
+            <br />
+            친구를 선택하세요
+          </EmptyChatText>
+        </EmptyChatContainer>
       </ChatWindowContainer>
     );
   }
@@ -119,14 +150,41 @@ const ChatWindow: React.FC = () => {
   return (
     <ChatWindowContainer>
       <MessagesContainer>
-        <div style={{ flexGrow: 1 }} />
-        {messages.map((msg: Message) => (
-          <MessageItem key={msg.id}>
-            <strong>{msg.sender.username}</strong>: {msg.content}
-            <Timestamp>{formatTimestamp(msg.createdAt)}</Timestamp>
-          </MessageItem>
-        ))}
-        <div ref={messagesEndRef} />
+        {isLoading ? (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div>메시지를 불러오는 중...</div>
+          </div>
+        ) : (
+          <>
+            {/* 메시지가 적을 때 상단에 빈 공간 추가하여 메시지가 하단에 정렬되도록 함 */}
+            {messages.length <= 5 && <div style={{ flex: 1 }} />}
+            {messages.map((msg: Message) => {
+              const isOwn = msg.sender?.id === currentUserId;
+
+              return (
+                <MessageItem key={msg.id} isOwn={isOwn}>
+                  {!isOwn && (
+                    <MessageHeader>
+                      <SenderName>{msg.sender?.username}</SenderName>
+                    </MessageHeader>
+                  )}
+                  <MessageBubble isOwn={isOwn}>{msg.content}</MessageBubble>
+                  <Timestamp isOwn={isOwn}>
+                    {formatTimestamp(msg.createdAt || "")}
+                  </Timestamp>
+                </MessageItem>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </>
+        )}
       </MessagesContainer>
       <MessageInput chatId={chatId} />
     </ChatWindowContainer>

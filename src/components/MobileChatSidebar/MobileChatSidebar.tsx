@@ -6,9 +6,9 @@ import {
   PlusBadge,
   Divider,
 } from "./MobileChatSidebar.styles";
-import { Chat } from "../../api/chat"; // Chat 인터페이스 사용
+import { type Chat } from "@/lib/api/chat"; // Chat 인터페이스 사용
 import { useRecoilState } from "recoil";
-import { selectedChatState } from "../../state/atoms";
+import { selectedChatState } from "@/store/atoms";
 
 interface MobileChatSidebarProps {
   isOpen: boolean;
