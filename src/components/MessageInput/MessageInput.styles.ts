@@ -48,6 +48,76 @@ export const TextInput = styled.input`
   appearance: none;
 `;
 
+export const AttachmentButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: ${({ theme }) => theme.colors.bgTertiary};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.full};
+  color: ${({ theme }) => theme.colors.text};
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  position: relative;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.border};
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+export const AttachmentDropdown = styled.div<{ isOpen: boolean }>`
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  box-shadow: ${({ theme }) => theme.shadows.lg};
+  padding: 8px;
+  margin-bottom: 8px;
+  display: ${({ isOpen }) => (isOpen ? "flex" : "none")};
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1000;
+  min-width: 200px;
+`;
+
+export const DropdownItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.md};
+  color: ${({ theme }) => theme.colors.text};
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  transition: all 0.2s ease;
+  width: 100%;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.bgTertiary};
+    transform: translateX(2px);
+  }
+
+  &:active {
+    transform: translateX(0);
+  }
+`;
+
 export const SendButton = styled.button<{ disabled?: boolean }>`
   display: flex;
   align-items: center;
@@ -85,4 +155,166 @@ export const SendButton = styled.button<{ disabled?: boolean }>`
     font-size: 16px;
     font-weight: bold;
   }
+`;
+
+export const AttachmentContainer = styled.div`
+  padding: 12px 20px;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  max-height: 300px;
+  overflow-y: auto;
+`;
+
+export const CodeInputModal = styled.div<{ isOpen: boolean }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: ${({ isOpen }) => (isOpen ? "flex" : "none")};
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+`;
+
+export const CodeModalContent = styled.div`
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  padding: 24px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: ${({ theme }) => theme.shadows.lg};
+`;
+
+export const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+`;
+
+export const ModalTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text};
+  margin: 0;
+`;
+
+export const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: ${({ theme }) => theme.radius.sm};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.bgTertiary};
+  }
+`;
+
+export const FormGroup = styled.div`
+  margin-bottom: 16px;
+`;
+
+export const Label = styled.label`
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 8px;
+`;
+
+export const Input = styled.input`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 14px;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  }
+`;
+
+export const TextArea = styled.textarea`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 14px;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro",
+    monospace;
+  min-height: 200px;
+  resize: vertical;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  }
+`;
+
+export const ModalActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+`;
+
+export const Button = styled.button<{ variant?: "primary" | "secondary" }>`
+  padding: 12px 24px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  ${({ variant = "secondary", theme }) =>
+    variant === "primary"
+      ? `
+        background: ${theme.colors.primary};
+        color: #ffffff;
+        &:hover {
+          background: ${theme.colors.secondary};
+          transform: translateY(-1px);
+        }
+      `
+      : `
+        background: ${theme.colors.bgTertiary};
+        color: ${theme.colors.text};
+        border: 1px solid ${theme.colors.border};
+        &:hover {
+          background: ${theme.colors.border};
+        }
+      `}
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+export const HiddenFileInput = styled.input`
+  display: none;
 `;

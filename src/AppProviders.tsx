@@ -29,10 +29,10 @@ const AppWithTheme: React.FC = () => {
       <BrowserRouter>
         <GlobalStyle />
         <AppRoutes />
-        <ReactQueryDevtools
+        {/* <ReactQueryDevtools
           initialIsOpen={false}
           buttonPosition="bottom-left"
-        />
+        /> */}
 
         <ToastContainer
           className="custom-toast-container"

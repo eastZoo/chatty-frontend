@@ -4,6 +4,8 @@ import { useRecoilValue } from "recoil";
 import { selectedChatState } from "@/store/atoms";
 import { adminInfoSelector } from "@/store/adminInfo";
 import MessageInput from "@/components/MessageInput/MessageInput";
+import CodeBlock from "@/components/CodeBlock/CodeBlock";
+import FileAttachment from "@/components/FileAttachment/FileAttachment";
 import socket from "@/lib/api/socket";
 import { type Message } from "@/lib/api/message";
 import { markChatAsRead } from "@/lib/api/chat";
@@ -175,7 +177,38 @@ const ChatWindow: React.FC = () => {
                       <SenderName>{msg.sender?.username}</SenderName>
                     </MessageHeader>
                   )}
-                  <MessageBubble isOwn={isOwn}>{msg.content}</MessageBubble>
+
+                  {/* 텍스트 메시지 */}
+                  {msg.content && (
+                    <MessageBubble isOwn={isOwn}>{msg.content}</MessageBubble>
+                  )}
+
+                  {/* 코드 블록들 */}
+                  {/* TODO: 서버에서 codeAttachments 필드 지원 필요 */}
+                  {(msg as any).codeAttachments?.map((code: any) => (
+                    <CodeBlock
+                      key={code.id}
+                      code={code.code}
+                      language={code.language}
+                      filename={code.filename}
+                      isOwn={isOwn}
+                    />
+                  ))}
+
+                  {/* 파일 첨부들 */}
+                  {/* TODO: 서버에서 fileAttachments 필드 지원 필요 */}
+                  {(msg as any).fileAttachments?.map((file: any) => (
+                    <FileAttachment
+                      key={file.id}
+                      file={file}
+                      isOwn={isOwn}
+                      onDownload={(file) => {
+                        // TODO: 파일 다운로드 기능 구현
+                        console.log("Download file:", file.name);
+                      }}
+                    />
+                  ))}
+
                   <Timestamp isOwn={isOwn}>
                     {formatTimestamp(msg.createdAt || "")}
                   </Timestamp>
