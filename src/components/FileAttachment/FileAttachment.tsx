@@ -111,29 +111,16 @@ const ImagePreview = styled.img`
   object-fit: cover;
 `;
 
-const TextPreview = styled.pre`
-  margin: 0;
-  padding: 12px;
-  background: ${({ theme }) => theme.colors.bgTertiary};
-  color: ${({ theme }) => theme.colors.text};
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro",
-    monospace;
-  font-size: 12px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 150px;
-  overflow-y: auto;
-`;
-
 interface FileAttachmentProps {
   file: {
     id: string;
-    name: string;
+    originalName: string;
+    filename: string;
     size: number;
-    type: string;
-    url?: string;
-    content?: string;
+    mimetype?: string;
+    type?: string; // 백엔드에서 type 필드를 사용할 수도 있음
+    url: string;
+    uploadedBy?: any;
   };
   isOwn?: boolean;
   onDownload?: (file: any) => void;
@@ -146,15 +133,21 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
   onDownload,
   onRemove,
 }) => {
-  const getFileIcon = (type: string) => {
-    if (type.startsWith("image/")) {
+  // mimetype 또는 type 필드에서 MIME 타입 가져오기
+  const getMimeType = () => file.mimetype || file.type || "";
+
+  const getFileIcon = (mimetype: string) => {
+    if (!mimetype) {
+      return <FiFile size={20} />;
+    }
+    if (mimetype.startsWith("image/")) {
       return <FiImage size={20} />;
-    } else if (type.startsWith("text/")) {
+    } else if (mimetype.startsWith("text/")) {
       return <FiFileText size={20} />;
     } else if (
-      type.includes("zip") ||
-      type.includes("rar") ||
-      type.includes("tar")
+      mimetype.includes("zip") ||
+      mimetype.includes("rar") ||
+      mimetype.includes("tar")
     ) {
       return <FiArchive size={20} />;
     } else {
@@ -162,10 +155,15 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
     }
   };
 
-  const getFileTypeColor = (type: string) => {
-    if (type.startsWith("image/")) return "#007AFF";
-    if (type.startsWith("text/")) return "#34C759";
-    if (type.includes("zip") || type.includes("rar") || type.includes("tar"))
+  const getFileTypeColor = (mimetype: string) => {
+    if (!mimetype) return "#8E8E93";
+    if (mimetype.startsWith("image/")) return "#007AFF";
+    if (mimetype.startsWith("text/")) return "#34C759";
+    if (
+      mimetype.includes("zip") ||
+      mimetype.includes("rar") ||
+      mimetype.includes("tar")
+    )
       return "#FF9500";
     return "#8E8E93";
   };
@@ -178,38 +176,34 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const getFileExtension = (filename: string) => {
-    return filename.split(".").pop()?.toUpperCase() || "FILE";
+  const getFileExtension = (originalName: string) => {
+    return originalName.split(".").pop()?.toUpperCase() || "FILE";
   };
 
   const renderPreview = () => {
-    if (file.type.startsWith("image/") && file.url) {
+    const mimeType = getMimeType();
+    if (mimeType && mimeType.startsWith("image/") && file.url) {
       return (
         <PreviewContainer>
-          <ImagePreview src={file.url} alt={file.name} />
-        </PreviewContainer>
-      );
-    } else if (file.type.startsWith("text/") && file.content) {
-      return (
-        <PreviewContainer>
-          <TextPreview>{file.content}</TextPreview>
+          <ImagePreview src={file.url} alt={file.originalName} />
         </PreviewContainer>
       );
     }
+    // 텍스트 미리보기는 제거 (서버에서 파일 내용을 직접 제공하지 않음)
     return null;
   };
 
   return (
     <FileContainer>
       <FileContent>
-        <FileIconContainer style={{ color: getFileTypeColor(file.type) }}>
-          {getFileIcon(file.type)}
+        <FileIconContainer style={{ color: getFileTypeColor(getMimeType()) }}>
+          {getFileIcon(getMimeType())}
         </FileIconContainer>
         <FileInfo>
-          <FileName>{file.name}</FileName>
+          <FileName>{file.originalName}</FileName>
           <FileMeta>
             <FileSize>{formatFileSize(file.size)}</FileSize>
-            <FileType>{getFileExtension(file.name)}</FileType>
+            <FileType>{getFileExtension(file.originalName)}</FileType>
           </FileMeta>
         </FileInfo>
         <ActionButtons>

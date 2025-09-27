@@ -1,8 +1,18 @@
 import { request } from "./axiosInstance";
 
+export interface FileData {
+  id: string;
+  originalName: string;
+  filename: string;
+  mimetype: string;
+  size: string;
+  url: string;
+}
+
 export interface Message {
   id?: string;
   content?: string;
+  fileIds?: string[] | null;
   createdAt?: string;
   privateChat?: {
     id: string;
@@ -12,9 +22,11 @@ export interface Message {
   };
   // sender 객체를 추가하여 작성자 정보(예?: id, username)를 포함
   sender?: {
-    id?: number;
+    id?: string;
     username?: string;
+    password?: string;
   };
+  files?: FileData[];
 }
 
 export const getMessages = async (chatId: string): Promise<Message[]> => {

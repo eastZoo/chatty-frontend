@@ -215,6 +215,7 @@ const ChatWindow: React.FC = () => {
 
                   {/* 메시지 내용 파싱 및 렌더링 */}
                   {msg.content &&
+                    msg.content.trim() &&
                     parseCodeBlocks(msg.content).map((part, index) => {
                       if (part.type === "code") {
                         return (
@@ -235,18 +236,68 @@ const ChatWindow: React.FC = () => {
                     })}
 
                   {/* 파일 첨부들 */}
-                  {/* TODO: 서버에서 fileAttachments 필드 지원 필요 */}
-                  {(msg as any).fileAttachments?.map((file: any) => (
-                    <FileAttachment
-                      key={file.id}
-                      file={file}
-                      isOwn={isOwn}
-                      onDownload={(file) => {
-                        // TODO: 파일 다운로드 기능 구현
-                        console.log("Download file:", file.name);
-                      }}
-                    />
-                  ))}
+                  {msg.files &&
+                    msg.files.length > 0 &&
+                    msg.files.map((file) => (
+                      <FileAttachment
+                        key={file.id}
+                        file={{
+                          id: file.id,
+                          originalName: file.originalName,
+                          filename: file.filename,
+                          size: parseInt(file.size),
+                          mimetype: file.mimetype,
+                          url: file.url,
+                        }}
+                        isOwn={isOwn}
+                        onDownload={async (file) => {
+                          const shouldDownload = window.confirm(
+                            `"${file.originalName}" 파일을 다운로드하시겠습니까?`
+                          );
+
+                          if (shouldDownload) {
+                            try {
+                              // 파일 다운로드 URL 생성
+                              const downloadUrl = `${
+                                import.meta.env.VITE_API_BASE_URL
+                              }${file.url}`;
+
+                              // fetch로 파일 데이터 가져오기
+                              const response = await fetch(downloadUrl, {
+                                method: "GET",
+                                headers: {
+                                  Authorization: `Bearer ${localStorage.getItem(
+                                    "accessToken"
+                                  )}`, // 인증 토큰 추가
+                                },
+                              });
+
+                              if (!response.ok) {
+                                throw new Error("파일 다운로드 실패");
+                              }
+
+                              // Blob으로 변환
+                              const blob = await response.blob();
+
+                              // 다운로드 링크 생성
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = file.originalName; // 원본 파일명으로 다운로드
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+
+                              // 메모리 정리
+                              window.URL.revokeObjectURL(url);
+                            } catch (error) {
+                              console.error("파일 다운로드 오류:", error);
+                              alert("파일 다운로드에 실패했습니다.");
+                            }
+                          }
+                        }}
+                      />
+                    ))}
 
                   <Timestamp isOwn={isOwn}>
                     {formatTimestamp(msg.createdAt || "")}

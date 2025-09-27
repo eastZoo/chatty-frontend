@@ -7,6 +7,7 @@ import { InputContainer, TextInput, SendButton } from "./MessageInput.styles";
 import { selectedChatState } from "@/store/atoms";
 import CodeBlock from "@/components/CodeBlock/CodeBlock";
 import FileAttachment from "@/components/FileAttachment/FileAttachment";
+import { uploadFile } from "@/lib/api/files";
 import * as S from "./MessageInput.styles";
 
 interface MessageInputProps {
@@ -22,11 +23,13 @@ interface CodeAttachment {
 
 interface FileAttachmentData {
   id: string;
-  name: string;
+  originalName: string;
+  filename: string;
   size: number;
-  type: string;
-  content?: string;
-  url?: string;
+  mimetype?: string;
+  type?: string; // 백엔드에서 type 필드를 사용할 수도 있음
+  url: string;
+  uploadedBy?: any;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
@@ -95,6 +98,11 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
           userId: adminInfo.id,
           username: adminInfo.username,
           chatType: selectedChat?.type,
+          // 파일 첨부가 있을 때 fileIds 전송
+          fileIds:
+            fileAttachments.length > 0
+              ? fileAttachments.map((f) => f.id)
+              : undefined,
           // TODO: 서버에서 지원해야 할 필드들
           codeAttachments:
             codeAttachments.length > 0 ? codeAttachments : undefined,
@@ -158,6 +166,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
         userId: adminInfo.id,
         username: adminInfo.username,
         chatType: selectedChat?.type,
+        fileIds: undefined, // 코드 전송 시에는 파일 첨부 없음
       });
 
       setCodeInput("");
@@ -182,34 +191,32 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
 
   // 파일 첨부 처리
   const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
       if (files) {
-        Array.from(files).forEach((file) => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const content = event.target?.result as string;
-            const newFile: FileAttachmentData = {
-              id: Date.now().toString() + Math.random(),
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              content: file.type.startsWith("text/") ? content : undefined,
-              // TODO: 실제 파일 업로드 시 URL 생성
-              url: file.type.startsWith("image/") ? content : undefined,
-            };
-            setFileAttachments((prev) => [...prev, newFile]);
-          };
+        try {
+          // 각 파일을 순차적으로 업로드
+          for (const file of Array.from(files)) {
+            const uploadedFile = await uploadFile(file);
 
-          if (file.type.startsWith("text/") || file.type.startsWith("image/")) {
-            reader.readAsDataURL(file);
-          } else {
-            // 바이너리 파일의 경우 서버 업로드 필요
-            // TODO: 파일 업로드 API 호출
-            console.log("Binary file upload needed:", file.name);
+            const newFile: FileAttachmentData = {
+              id: uploadedFile.id,
+              originalName: uploadedFile.originalName,
+              filename: uploadedFile.filename,
+              size: uploadedFile.size,
+              mimetype: uploadedFile.mimetype,
+              url: uploadedFile.url,
+              uploadedBy: uploadedFile.uploadedBy,
+            };
+
+            setFileAttachments((prev) => [...prev, newFile]);
           }
-        });
+        } catch (error) {
+          console.error("파일 업로드 실패:", error);
+          // TODO: 사용자에게 오류 알림 표시
+        }
       }
+
       // 파일 입력 초기화
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -225,6 +232,50 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
 
   const handleRemoveFile = useCallback((id: string) => {
     setFileAttachments((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  // 파일 다운로드 핸들러
+  const handleFileDownload = useCallback(async (file: FileAttachmentData) => {
+    const shouldDownload = window.confirm(
+      `"${file.originalName}" 파일을 다운로드하시겠습니까?`
+    );
+
+    if (shouldDownload) {
+      try {
+        // 파일 다운로드 URL 생성
+        const downloadUrl = `${import.meta.env.VITE_API_BASE_URL}${file.url}`;
+
+        // fetch로 파일 데이터 가져오기
+        const response = await fetch(downloadUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`, // 인증 토큰 추가
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("파일 다운로드 실패");
+        }
+
+        // Blob으로 변환
+        const blob = await response.blob();
+
+        // 다운로드 링크 생성
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = file.originalName; // 원본 파일명으로 다운로드
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 메모리 정리
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("파일 다운로드 오류:", error);
+        alert("파일 다운로드에 실패했습니다.");
+      }
+    }
   }, []);
 
   // 파일 선택 트리거
@@ -311,6 +362,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
               file={file}
               isOwn={true}
               onRemove={handleRemoveFile}
+              onDownload={handleFileDownload}
             />
           ))}
         </S.AttachmentContainer>
