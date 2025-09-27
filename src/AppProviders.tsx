@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { RecoilRoot } from "recoil";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "styled-components";
 import { BrowserRouter } from "react-router-dom";
 import { useRecoilValue, useSetRecoilState } from "recoil";

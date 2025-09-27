@@ -51,6 +51,41 @@ const ChatWindow: React.FC = () => {
     return `${dateStr} ${timeStr}`;
   };
 
+  // 코드 블록 파싱 함수
+  const parseCodeBlocks = (content: string) => {
+    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = codeBlockRegex.exec(content)) !== null) {
+      // 코드 블록 이전의 텍스트 추가
+      if (match.index > lastIndex) {
+        const textContent = content.slice(lastIndex, match.index).trim();
+        if (textContent) {
+          parts.push({ type: "text", content: textContent });
+        }
+      }
+
+      // 코드 블록 추가
+      const language = match[1] || "text";
+      const code = match[2].trim();
+      parts.push({ type: "code", content: code, language });
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // 마지막 텍스트 추가
+    if (lastIndex < content.length) {
+      const textContent = content.slice(lastIndex).trim();
+      if (textContent) {
+        parts.push({ type: "text", content: textContent });
+      }
+    }
+
+    return parts.length > 0 ? parts : [{ type: "text", content }];
+  };
+
   // 자동 스크롤 - 메시지가 추가될 때만 아래로 스크롤
   useEffect(() => {
     if (messagesEndRef.current && messages.length > 0) {
@@ -178,22 +213,26 @@ const ChatWindow: React.FC = () => {
                     </MessageHeader>
                   )}
 
-                  {/* 텍스트 메시지 */}
-                  {msg.content && (
-                    <MessageBubble isOwn={isOwn}>{msg.content}</MessageBubble>
-                  )}
-
-                  {/* 코드 블록들 */}
-                  {/* TODO: 서버에서 codeAttachments 필드 지원 필요 */}
-                  {(msg as any).codeAttachments?.map((code: any) => (
-                    <CodeBlock
-                      key={code.id}
-                      code={code.code}
-                      language={code.language}
-                      filename={code.filename}
-                      isOwn={isOwn}
-                    />
-                  ))}
+                  {/* 메시지 내용 파싱 및 렌더링 */}
+                  {msg.content &&
+                    parseCodeBlocks(msg.content).map((part, index) => {
+                      if (part.type === "code") {
+                        return (
+                          <CodeBlock
+                            key={index}
+                            code={part.content}
+                            language={part.language}
+                            isOwn={isOwn}
+                          />
+                        );
+                      } else {
+                        return (
+                          <MessageBubble key={index} isOwn={isOwn}>
+                            {part.content}
+                          </MessageBubble>
+                        );
+                      }
+                    })}
 
                   {/* 파일 첨부들 */}
                   {/* TODO: 서버에서 fileAttachments 필드 지원 필요 */}

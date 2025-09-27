@@ -1,16 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { FiCode, FiPaperclip, FiX, FiPlus } from "react-icons/fi";
+import { FiCode, FiImage, FiFile, FiX } from "react-icons/fi";
 import socket from "@/lib/api/socket";
 import { adminInfoSelector } from "@/store/adminInfo";
-import {
-  InputContainer,
-  TextInput,
-  SendButton,
-  AttachmentButton,
-  AttachmentDropdown,
-  DropdownItem,
-} from "./MessageInput.styles";
+import { InputContainer, TextInput, SendButton } from "./MessageInput.styles";
 import { selectedChatState } from "@/store/atoms";
 import CodeBlock from "@/components/CodeBlock/CodeBlock";
 import FileAttachment from "@/components/FileAttachment/FileAttachment";
@@ -47,12 +40,40 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
     []
   );
   const [showCodeModal, setShowCodeModal] = useState(false);
-  const [showAttachmentDropdown, setShowAttachmentDropdown] = useState(false);
 
-  // 코드 입력 상태
+  // 기능 모드 상태
+  const [activeFeature, setActiveFeature] = useState<
+    "message" | "code" | "file" | "image"
+  >("message");
   const [codeInput, setCodeInput] = useState("");
-  const [language, setLanguage] = useState("javascript");
-  const [filename, setFilename] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+
+  // 언어 옵션
+  const languageOptions = [
+    { value: "javascript", label: "JavaScript" },
+    { value: "typescript", label: "TypeScript" },
+    { value: "python", label: "Python" },
+    { value: "java", label: "Java" },
+    { value: "cpp", label: "C++" },
+    { value: "c", label: "C" },
+    { value: "csharp", label: "C#" },
+    { value: "php", label: "PHP" },
+    { value: "ruby", label: "Ruby" },
+    { value: "go", label: "Go" },
+    { value: "rust", label: "Rust" },
+    { value: "swift", label: "Swift" },
+    { value: "kotlin", label: "Kotlin" },
+    { value: "html", label: "HTML" },
+    { value: "css", label: "CSS" },
+    { value: "scss", label: "SCSS" },
+    { value: "sql", label: "SQL" },
+    { value: "json", label: "JSON" },
+    { value: "xml", label: "XML" },
+    { value: "yaml", label: "YAML" },
+    { value: "markdown", label: "Markdown" },
+    { value: "bash", label: "Bash" },
+    { value: "text", label: "Plain Text" },
+  ];
 
   // 입력 필드에 대한 ref 생성
   const inputRef = useRef<HTMLInputElement>(null);
@@ -105,21 +126,59 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
     setContent(e.target.value);
   }, []);
 
-  // 코드 첨부 처리
+  // 기능 선택
+  const handleFeatureSelect = useCallback(
+    (feature: "message" | "code" | "file" | "image") => {
+      setActiveFeature(feature);
+      if (feature === "code") {
+        // 코드 모드 진입 시 코드 입력창에 포커스
+        setTimeout(() => {
+          const codeTextArea = document.querySelector(
+            "[data-code-textarea]"
+          ) as HTMLTextAreaElement;
+          if (codeTextArea) {
+            codeTextArea.focus();
+          }
+        }, 100);
+      }
+    },
+    []
+  );
+
+  // 코드 전송 - 바로 메시지로 전송
+  const handleSendCode = useCallback(() => {
+    if (codeInput.trim()) {
+      // 코드를 ```로 시작하는 형식으로 변환 (서버에서 파싱 가능)
+      const formattedCode = `\`\`\`${selectedLanguage}\n${codeInput.trim()}\n\`\`\``;
+
+      // 바로 메시지로 전송
+      socket.emit("sendMessage", {
+        chatId,
+        content: formattedCode,
+        userId: adminInfo.id,
+        username: adminInfo.username,
+        chatType: selectedChat?.type,
+      });
+
+      setCodeInput("");
+      // 코드 모드 유지 - 전송 후에도 코드 모드에서 계속 작업 가능
+    }
+  }, [codeInput, selectedLanguage, chatId, adminInfo, selectedChat?.type]);
+
+  // 코드 첨부 처리 (기존 모달용)
   const handleAddCode = useCallback(() => {
     if (codeInput.trim()) {
       const newCode: CodeAttachment = {
         id: Date.now().toString(),
         code: codeInput.trim(),
-        language,
-        filename: filename.trim() || undefined,
+        language: selectedLanguage,
+        filename: "", // 빈 문자열로 설정
       };
       setCodeAttachments((prev) => [...prev, newCode]);
       setCodeInput("");
-      setFilename("");
       setShowCodeModal(false);
     }
-  }, [codeInput, language, filename]);
+  }, [codeInput, selectedLanguage]);
 
   // 파일 첨부 처리
   const handleFileSelect = useCallback(
@@ -168,25 +227,10 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
     setFileAttachments((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  // 드롭다운 토글
-  const toggleAttachmentDropdown = useCallback(() => {
-    setShowAttachmentDropdown((prev) => !prev);
+  // 파일 선택 트리거
+  const triggerFileSelect = useCallback(() => {
+    fileInputRef.current?.click();
   }, []);
-
-  // 외부 클릭 시 드롭다운 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showAttachmentDropdown) {
-        const target = event.target as Element;
-        if (!target.closest("[data-attachment-dropdown]")) {
-          setShowAttachmentDropdown(false);
-        }
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showAttachmentDropdown]);
 
   // 컴포넌트 마운트 시 포커스를 설정하여 키보드가 바로 올라오도록 할 수도 있습니다.
   useEffect(() => {
@@ -200,6 +244,55 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
 
   return (
     <>
+      {/* 기능 선택 바 */}
+      <S.QuickCodeBar>
+        <S.FeatureSlider>
+          {activeFeature === "message" ? (
+            <>
+              <S.FeatureButton
+                isActive={false}
+                onClick={() => handleFeatureSelect("code")}
+              >
+                <FiCode size={14} />
+                코드
+              </S.FeatureButton>
+
+              <S.FeatureButton isActive={false} onClick={triggerFileSelect}>
+                <FiFile size={14} />
+                파일
+              </S.FeatureButton>
+
+              <S.FeatureButton isActive={false} onClick={triggerFileSelect}>
+                <FiImage size={14} />
+                이미지
+              </S.FeatureButton>
+            </>
+          ) : (
+            <>
+              <S.QuickLanguageSelect
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </S.QuickLanguageSelect>
+
+              <S.QuickActions>
+                <S.QuickActionButton
+                  onClick={() => handleFeatureSelect("message")}
+                >
+                  <FiX size={14} />
+                  취소
+                </S.QuickActionButton>
+              </S.QuickActions>
+            </>
+          )}
+        </S.FeatureSlider>
+      </S.QuickCodeBar>
+
       {/* 첨부 파일 표시 */}
       {hasAttachments && (
         <S.AttachmentContainer>
@@ -223,43 +316,57 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
         </S.AttachmentContainer>
       )}
 
-      {/* 메시지 입력 */}
-      <InputContainer onSubmit={handleSubmit} data-attachment-dropdown>
-        <AttachmentButton onClick={toggleAttachmentDropdown}>
-          <FiPlus size={20} />
-          <AttachmentDropdown isOpen={showAttachmentDropdown}>
-            <DropdownItem
-              onClick={() => {
-                setShowCodeModal(true);
-                setShowAttachmentDropdown(false);
-              }}
-            >
-              <FiCode size={16} />
-              코드 추가
-            </DropdownItem>
-            <DropdownItem
-              onClick={() => {
-                fileInputRef.current?.click();
-                setShowAttachmentDropdown(false);
-              }}
-            >
-              <FiPaperclip size={16} />
-              파일 첨부
-            </DropdownItem>
-          </AttachmentDropdown>
-        </AttachmentButton>
+      {/* 입력 영역 */}
+      <InputContainer
+        onSubmit={
+          activeFeature === "code"
+            ? (e) => {
+                e.preventDefault();
+                handleSendCode();
+              }
+            : handleSubmit
+        }
+      >
+        {activeFeature === "code" ? (
+          <S.CodeTextArea
+            data-code-textarea
+            value={codeInput}
+            onChange={(e) => setCodeInput(e.target.value)}
+            placeholder={`${
+              languageOptions.find((lang) => lang.value === selectedLanguage)
+                ?.label || "JavaScript"
+            } 코드를 입력하세요...`}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                if (e.shiftKey) {
+                  // Shift + Enter: 새 줄 추가
+                  return;
+                } else {
+                  // Enter: 전송
+                  e.preventDefault();
+                  handleSendCode();
+                }
+              }
+            }}
+          />
+        ) : (
+          <TextInput
+            ref={inputRef}
+            type="text"
+            placeholder="메시지를 입력하세요..."
+            value={content}
+            onChange={handleChange}
+            maxLength={1000}
+          />
+        )}
 
-        <TextInput
-          ref={inputRef}
-          type="text"
-          placeholder="메시지를 입력하세요..."
-          value={content}
-          onChange={handleChange}
-          maxLength={1000}
-        />
         <SendButton
           type="submit"
-          disabled={!content.trim() && !hasAttachments}
+          disabled={
+            activeFeature === "code"
+              ? !codeInput.trim()
+              : !content.trim() && !hasAttachments
+          }
         ></SendButton>
       </InputContainer>
 
@@ -282,23 +389,17 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
           </S.ModalHeader>
 
           <S.FormGroup>
-            <S.Label>파일명 (선택사항)</S.Label>
-            <S.Input
-              type="text"
-              value={filename}
-              onChange={(e) => setFilename(e.target.value)}
-              placeholder="예: App.js"
-            />
-          </S.FormGroup>
-
-          <S.FormGroup>
             <S.Label>언어</S.Label>
-            <S.Input
-              type="text"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              placeholder="javascript, python, java, etc."
-            />
+            <S.LanguageSelect
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+            >
+              {languageOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </S.LanguageSelect>
           </S.FormGroup>
 
           <S.FormGroup>

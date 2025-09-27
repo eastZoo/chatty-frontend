@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { login, type LoginRequest } from "@/lib/api/auth";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import useAuthToken from "@/lib/hooks/useAuthToken";
 import {
@@ -14,7 +14,6 @@ import {
 } from "./LoginPage.styles";
 
 const LoginPage: React.FC = () => {
-  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const { customLogin } = useAuthToken();

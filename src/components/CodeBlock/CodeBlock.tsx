@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import {
+  oneLight,
+  oneDark,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import { FiCopy, FiCheck, FiCode, FiDownload } from "react-icons/fi";
+import { useRecoilValue } from "recoil";
+import { darkModeState } from "@/store/theme";
 
 const CodeBlockContainer = styled.div`
   background: ${({ theme }) => theme.colors.bgSecondary};
@@ -10,6 +17,9 @@ const CodeBlockContainer = styled.div`
   overflow: hidden;
   box-shadow: ${({ theme }) => theme.shadows.sm};
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 `;
 
 const CodeHeader = styled.div`
@@ -66,40 +76,57 @@ const ActionButton = styled.button`
   }
 `;
 
-const CodeContent = styled.pre`
-  margin: 0;
-  padding: 16px;
-  background: ${({ theme }) => theme.colors.bgSecondary};
-  color: ${({ theme }) => theme.colors.text};
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro",
-    monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 400px;
-  overflow-y: auto;
+const StyledSyntaxHighlighter = styled(SyntaxHighlighter)`
+  margin: 0 !important;
+  padding: 16px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  max-height: 400px !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
 
-  /* 코드 하이라이팅을 위한 기본 스타일 */
-  .keyword {
-    color: #0077aa;
+  /* 스크롤바 스타일링 */
+  &::-webkit-scrollbar {
+    width: 6px;
   }
-  .string {
-    color: #669900;
+
+  &::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.colors.bgTertiary};
   }
-  .number {
-    color: #990055;
+
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.colors.border};
+    border-radius: 3px;
+
+    &:hover {
+      background: ${({ theme }) => theme.colors.textSecondary};
+    }
   }
-  .comment {
-    color: #999999;
-    font-style: italic;
+
+  /* 가로 스크롤바 */
+  &::-webkit-scrollbar:horizontal {
+    height: 6px;
   }
-  .function {
-    color: #dd4a68;
+
+  /* 코드 라인 스타일 */
+  code {
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    white-space: pre-wrap !important;
   }
-  .variable {
-    color: #ee5a24;
+
+  /* 긴 코드 라인 처리 */
+  pre {
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
   }
 `;
 
@@ -135,9 +162,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   language = "text",
   filename,
   fileSize,
-  isOwn = false,
 }) => {
   const [copied, setCopied] = useState(false);
+  const isDarkMode = useRecoilValue(darkModeState);
 
   const handleCopy = async () => {
     try {
@@ -189,7 +216,20 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           )}
         </ActionButtons>
       </CodeHeader>
-      <CodeContent>{code}</CodeContent>
+      <StyledSyntaxHighlighter
+        language={language}
+        style={isDarkMode ? oneDark : oneLight}
+        showLineNumbers={false}
+        wrapLines={true}
+        wrapLongLines={true}
+        customStyle={{
+          background: "transparent",
+          margin: 0,
+          padding: "16px",
+        }}
+      >
+        {code}
+      </StyledSyntaxHighlighter>
       {filename && (
         <FileInfo>
           <FileIcon>

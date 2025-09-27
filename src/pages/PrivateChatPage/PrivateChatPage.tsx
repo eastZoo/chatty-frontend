@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getPrivateChat } from "@/lib/api/chat";
 import ChatWindow from "@/components/ChatWindow/ChatWindow";
 import { useRecoilState } from "recoil";
@@ -11,7 +11,7 @@ const PrivateChatPage: React.FC = () => {
   const { friendId } = useParams<{ friendId: string }>();
   const [, setSelectedChat] = useRecoilState(selectedChatState);
 
-  const { data: privateChat, isLoading } = useQuery({
+  const { isLoading } = useQuery({
     queryKey: ["privateChat", friendId],
     queryFn: () =>
       getPrivateChat(friendId || "").then((data) => {

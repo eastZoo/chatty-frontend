@@ -6,14 +6,13 @@ import MobileChatSidebar from "@/components/MobileChatSidebar/MobileChatSidebar"
 import { ChatPageContainer, Overlay } from "./ChatPage.styles";
 import { useMediaQuery } from "react-responsive";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRecoilState } from "recoil";
+import { useSetRecoilState } from "recoil";
 import { selectedChatState } from "@/store/atoms";
 import { createChat, getChats } from "@/lib/api/chat";
 
 const ChatPage: React.FC = () => {
   const isMobile = useMediaQuery({ maxWidth: 768 });
-  const [selectedChat, setSelectedChat] = useRecoilState(selectedChatState);
-  const [newTitle, setNewTitle] = useState("");
+  const setSelectedChat = useSetRecoilState(selectedChatState);
 
   const queryClient = useQueryClient();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -31,7 +30,7 @@ const ChatPage: React.FC = () => {
   };
 
   const handleNewChat = async () => {
-    const chat = await createChatMutation(newTitle);
+    const chat = await createChatMutation("");
     setSelectedChat(chat);
     setSidebarOpen(false);
   };

@@ -318,3 +318,291 @@ export const Button = styled.button<{ variant?: "primary" | "secondary" }>`
 export const HiddenFileInput = styled.input`
   display: none;
 `;
+
+export const QuickCodeBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+`;
+
+export const FeatureSlider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: max-content;
+`;
+
+export const FeatureButton = styled.button<{ isActive: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: ${({ theme, isActive }) =>
+    isActive ? theme.colors.primary : theme.colors.bgTertiary};
+  border: 1px solid
+    ${({ theme, isActive }) =>
+      isActive ? theme.colors.primary : theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  color: ${({ theme, isActive }) => (isActive ? "#ffffff" : theme.colors.text)};
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+
+  &:hover {
+    background: ${({ theme, isActive }) =>
+      isActive ? theme.colors.primary : theme.colors.border};
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+
+export const QuickCodeToggle = styled.button<{ isActive: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: ${({ theme, isActive }) =>
+    isActive ? theme.colors.primary : theme.colors.bgTertiary};
+  border: 1px solid
+    ${({ theme, isActive }) =>
+      isActive ? theme.colors.primary : theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.xl};
+  color: ${({ theme, isActive }) => (isActive ? "#ffffff" : theme.colors.text)};
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: ${({ theme, isActive }) =>
+      isActive ? theme.colors.primary : theme.colors.border};
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+export const QuickLanguageSelect = styled.select`
+  padding: 8px 14px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+
+  option {
+    background: ${({ theme }) => theme.colors.bg};
+    color: ${({ theme }) => theme.colors.text};
+  }
+`;
+
+export const QuickActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+`;
+
+export const QuickActionButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: ${({ theme }) => theme.colors.bgTertiary};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.border};
+    color: ${({ theme }) => theme.colors.text};
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+
+export const CodeModeToggle = styled.button<{ isActive: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: ${({ theme, isActive }) =>
+    isActive ? theme.colors.primary : theme.colors.bgTertiary};
+  border: 1px solid
+    ${({ theme, isActive }) =>
+      isActive ? theme.colors.primary : theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.xl};
+  color: ${({ theme, isActive }) => (isActive ? "#ffffff" : theme.colors.text)};
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: ${({ theme, isActive }) =>
+      isActive ? theme.colors.primary : theme.colors.border};
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+export const CodeModeContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 20px;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+export const CodeInputHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+export const LanguageSelect = styled.select`
+  padding: 8px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  }
+
+  option {
+    background: ${({ theme }) => theme.colors.bg};
+    color: ${({ theme }) => theme.colors.text};
+  }
+`;
+
+export const CodeTextArea = styled.textarea`
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.xl};
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 16px;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro",
+    monospace;
+  min-height: 44px;
+  max-height: 200px;
+  resize: vertical;
+  box-sizing: border-box;
+  line-height: 1.4;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-style: italic;
+  }
+
+  /* iOS Safari input zoom 방지 */
+  font-size: 16px;
+
+  /* 모바일에서 터치 최적화 */
+  -webkit-appearance: none;
+  appearance: none;
+`;
+
+export const CodeActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+`;
+
+export const CodeActionButton = styled.button<{
+  variant?: "primary" | "secondary";
+}>`
+  padding: 8px 16px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  ${({ variant = "secondary", theme }) =>
+    variant === "primary"
+      ? `
+        background: ${theme.colors.primary};
+        color: #ffffff;
+        &:hover {
+          background: ${theme.colors.secondary};
+          transform: translateY(-1px);
+        }
+      `
+      : `
+        background: ${theme.colors.bgTertiary};
+        color: ${theme.colors.text};
+        border: 1px solid ${theme.colors.border};
+  &:hover {
+          background: ${theme.colors.border};
+        }
+      `}
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;

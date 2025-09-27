@@ -1,13 +1,12 @@
 import { useSetRecoilState } from "recoil";
-import { useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { request } from "@/lib/api/axiosInstance";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { adminInfoSelector } from "@/store/adminInfo";
 
 export default function useAuthToken() {
   const setAdminInfo = useSetRecoilState(adminInfoSelector);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const customLogin = async (adminInfo: any) => {
     try {

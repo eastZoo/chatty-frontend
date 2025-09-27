@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getFriends,
   getFriendRequests,
-  sendFriendRequest,
   acceptFriendRequest,
   rejectFriendRequest,
 } from "@/lib/api/friends";
@@ -26,7 +25,6 @@ import {
 import { toast } from "react-toastify";
 import { useRecoilValue } from "recoil";
 import { adminInfoSelector } from "@/store/adminInfo";
-import { useNavigate } from "react-router-dom";
 import FriendProfileModal from "@/components/FriendProfileModal/FriendProfileModal";
 
 interface Friend {
@@ -45,7 +43,6 @@ interface FriendRequest {
 const FriendsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const adminInfo = useRecoilValue(adminInfoSelector);
-  const navigate = useNavigate();
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 
   const { data: friends = [], isLoading: friendsLoading } = useQuery({
@@ -60,16 +57,16 @@ const FriendsPage: React.FC = () => {
     enabled: !!adminInfo,
   });
 
-  const sendRequestMutation = useMutation({
-    mutationFn: (receiverId: string) => sendFriendRequest(receiverId),
-    onSuccess: () => {
-      toast.success("친구 요청을 보냈습니다.");
-      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
-    },
-    onError: () => {
-      toast.error("친구 요청에 실패했습니다.");
-    },
-  });
+  // const sendRequestMutation = useMutation({
+  //   mutationFn: (receiverId: string) => sendFriendRequest(receiverId),
+  //   onSuccess: () => {
+  //     toast.success("친구 요청을 보냈습니다.");
+  //     queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+  //   },
+  //   onError: () => {
+  //     toast.error("친구 요청에 실패했습니다.");
+  //   },
+  // });
 
   const acceptRequestMutation = useMutation({
     mutationFn: (requestId: string) => acceptFriendRequest(requestId),
