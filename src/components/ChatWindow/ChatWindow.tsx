@@ -118,12 +118,29 @@ const ChatWindow: React.FC = () => {
     }
 
     // 읽지 않은 상태 업데이트: 채팅창이 열리면 현재 시각으로 읽음 상태를 업데이트
-    markChatAsRead({
-      id: chatId || "",
-      chatType: selectedChat?.type || "",
-    }).catch((error) => {
-      console.error("Error marking chat as read:", error);
-    });
+    const markAsRead = async () => {
+      try {
+        // API 호출로 읽음 상태 업데이트
+        await markChatAsRead({
+          id: chatId || "",
+          chatType: selectedChat?.type || "",
+        });
+
+        // 소켓을 통해 읽음 상태 브로드캐스트
+        socket.emit("markAsRead", {
+          chatId: chatId,
+          chatType: selectedChat?.type || "private",
+          userId: adminInfo?.id,
+        });
+
+        console.log(`Marked chat ${chatId} as read`);
+      } catch (error) {
+        console.error("Error marking chat as read:", error);
+      }
+    };
+
+    // 채팅방 진입 시 읽음 처리
+    markAsRead();
     const handlePreviousMessages = (previousMessages: Message[]) => {
       setMessages(previousMessages);
       setIsLoading(false);
@@ -176,6 +193,15 @@ const ChatWindow: React.FC = () => {
       socket.off("previousMessages", handlePreviousMessages);
       socket.off("newMessage", handleNewMessage);
       socket.off("chatListUpdate", handleChatListUpdate);
+
+      // 채팅방을 나갈 때도 읽음 상태 확인
+      if (chatId && adminInfo?.id) {
+        socket.emit("markAsRead", {
+          chatId: chatId,
+          chatType: selectedChat?.type || "private",
+          userId: adminInfo.id,
+        });
+      }
     };
   }, [chatId]);
 

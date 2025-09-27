@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
+import { useQueryClient } from "@tanstack/react-query";
 import { FiCode, FiImage, FiFile, FiX } from "react-icons/fi";
 import socket from "@/lib/api/socket";
 import { adminInfoSelector } from "@/store/adminInfo";
@@ -37,6 +38,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
   const [selectedChat] = useRecoilState(selectedChatState);
   const adminInfo = useRecoilValue(adminInfoSelector);
   const [isSending, setIsSending] = useState(false);
+  const queryClient = useQueryClient();
 
   // 첨부 파일 상태
   const [codeAttachments, setCodeAttachments] = useState<CodeAttachment[]>([]);
