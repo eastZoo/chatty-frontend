@@ -18,6 +18,16 @@ const socket = io(
   }
 );
 
+// 토큰 업데이트 함수
+export const updateSocketAuth = (token: string | null) => {
+  socket.auth = { token };
+  if (token && !socket.connected) {
+    socket.connect();
+  } else if (!token && socket.connected) {
+    socket.disconnect();
+  }
+};
+
 socket.on("connect", () => {
   console.log("Socket connected:", socket.id);
 });

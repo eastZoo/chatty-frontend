@@ -1,4 +1,5 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
+import { clearAllAuthData } from "@/lib/utils/authFunctions";
 
 // console.log("import.meta.env.VITE_API_BASE_URL", import.meta.env.VITE_API_BASE_URL);
 
@@ -39,7 +40,10 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (e) {
         // 리프레시 토큰이 만료되었거나 유효하지 않은 경우 로그아웃 처리
-        // RecoilLogout();
+        console.log("토큰 갱신 실패, 자동 로그아웃 처리");
+        clearAllAuthData();
+        // 페이지 새로고침으로 완전한 상태 초기화
+        window.location.href = "/login";
         return Promise.reject(e);
       }
     }
