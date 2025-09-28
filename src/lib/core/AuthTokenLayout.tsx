@@ -3,7 +3,7 @@ import useAuthToken from "@/lib/hooks/useAuthToken";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import socket, { updateSocketAuth } from "@/lib/api/socket";
+import socket from "@/lib/api/socket";
 
 interface AuthTokenLayoutProps {
   children: React.ReactNode;
@@ -32,9 +32,11 @@ export default function AuthTokenLayout({ children }: AuthTokenLayoutProps) {
         await Promise.all([fetchAdminInfo()]);
 
         // 인증 성공 시 소켓 연결
-        const token = localStorage.getItem("accessToken");
-        if (token) {
-          updateSocketAuth(token);
+        if (!socket.connected) {
+          socket.auth = {
+            token: localStorage.getItem("accessToken"),
+          };
+          socket.connect();
           console.log("소켓 연결 시도");
         }
 

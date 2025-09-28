@@ -7,7 +7,7 @@ import { InputContainer, TextInput, SendButton } from "./MessageInput.styles";
 import { selectedChatState } from "@/store/atoms";
 import CodeBlock from "@/components/CodeBlock/CodeBlock";
 import FileAttachment from "@/components/FileAttachment/FileAttachment";
-import { uploadFile } from "@/lib/api/files";
+import { uploadFile, uploadFileDirect } from "@/lib/api/files";
 import * as S from "./MessageInput.styles";
 
 interface MessageInputProps {
@@ -218,9 +218,45 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
       const files = e.target.files;
       if (files) {
         try {
+          // 파일 크기 제한 (10MB)
+          const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+          const oversizedFiles = Array.from(files).filter(
+            (file) => file.size > MAX_FILE_SIZE
+          );
+
+          if (oversizedFiles.length > 0) {
+            alert(
+              `다음 파일들이 너무 큽니다 (10MB 제한):\n${oversizedFiles
+                .map((f) => f.name)
+                .join("\n")}`
+            );
+            return;
+          }
+
           // 각 파일을 순차적으로 업로드
           for (const file of Array.from(files)) {
-            const uploadedFile = await uploadFile(file);
+            console.log("업로드할 파일:", {
+              name: file.name,
+              size: file.size,
+              type: file.type,
+            });
+
+            let uploadedFile;
+            try {
+              // 먼저 기본 방법으로 업로드 시도
+              uploadedFile = await uploadFile(file);
+              console.log("기본 업로드 성공:", uploadedFile);
+            } catch (error) {
+              console.warn("기본 업로드 실패, 대안 방법 시도:", error);
+              try {
+                // 대안 방법으로 업로드 시도
+                uploadedFile = await uploadFileDirect(file);
+                console.log("대안 업로드 성공:", uploadedFile);
+              } catch (directError) {
+                console.error("대안 업로드도 실패:", directError);
+                throw directError;
+              }
+            }
 
             const newFile: FileAttachmentData = {
               id: uploadedFile.id,
@@ -236,7 +272,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
           }
         } catch (error) {
           console.error("파일 업로드 실패:", error);
-          // TODO: 사용자에게 오류 알림 표시
+          alert("파일 업로드에 실패했습니다. 다시 시도해주세요.");
         }
       }
 
@@ -453,7 +489,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
         type="file"
         multiple
         onChange={handleFileSelect}
-        accept=".txt,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.css,.html,.json,.md,.xml,.yaml,.yml,.sql"
+        accept="*/*"
       />
 
       {/* 코드 입력 모달 */}

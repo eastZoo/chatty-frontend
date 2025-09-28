@@ -133,6 +133,63 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
   onDownload,
   onRemove,
 }) => {
+  // 파일명 안전하게 처리 (인코딩 문제 방지)
+  const getSafeFileName = (fileName: string) => {
+    try {
+      // 파일명이 깨진 경우 디코딩 시도
+      if (
+        fileName.includes("ì") ||
+        fileName.includes("í") ||
+        fileName.includes("â") ||
+        fileName.includes("ê") ||
+        fileName.includes("ô") ||
+        fileName.includes("û")
+      ) {
+        // 여러 인코딩 방식으로 복구 시도
+        const attempts = [
+          // UTF-8로 잘못 해석된 경우
+          () => {
+            const bytes = [];
+            for (let i = 0; i < fileName.length; i++) {
+              bytes.push(fileName.charCodeAt(i));
+            }
+            return new TextDecoder("utf-8").decode(new Uint8Array(bytes));
+          },
+          // Latin-1로 잘못 해석된 경우
+          () => decodeURIComponent(escape(fileName)),
+          // ISO-8859-1로 잘못 해석된 경우
+          () => {
+            const bytes = [];
+            for (let i = 0; i < fileName.length; i++) {
+              bytes.push(fileName.charCodeAt(i) & 0xff);
+            }
+            return new TextDecoder("utf-8").decode(new Uint8Array(bytes));
+          },
+        ];
+
+        for (const attempt of attempts) {
+          try {
+            const decoded = attempt();
+            if (
+              decoded !== fileName &&
+              !decoded.includes("ì") &&
+              !decoded.includes("í")
+            ) {
+              console.log(`파일명 복구 성공: ${fileName} -> ${decoded}`);
+              return decoded;
+            }
+          } catch (e) {
+            // 다음 시도로 계속
+          }
+        }
+      }
+      return fileName;
+    } catch (error) {
+      console.warn("파일명 디코딩 실패:", error);
+      return fileName;
+    }
+  };
+
   // mimetype 또는 type 필드에서 MIME 타입 가져오기
   const getMimeType = () => file.mimetype || file.type || "";
 
@@ -185,7 +242,10 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
     if (mimeType && mimeType.startsWith("image/") && file.url) {
       return (
         <PreviewContainer>
-          <ImagePreview src={file.url} alt={file.originalName} />
+          <ImagePreview
+            src={`${import.meta.env.VITE_API_BASE_URL}/files/${file.id}`}
+            alt={getSafeFileName(file.originalName)}
+          />
         </PreviewContainer>
       );
     }
@@ -200,10 +260,12 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
           {getFileIcon(getMimeType())}
         </FileIconContainer>
         <FileInfo>
-          <FileName>{file.originalName}</FileName>
+          <FileName>{getSafeFileName(file.originalName)}</FileName>
           <FileMeta>
             <FileSize>{formatFileSize(file.size)}</FileSize>
-            <FileType>{getFileExtension(file.originalName)}</FileType>
+            <FileType>
+              {getFileExtension(getSafeFileName(file.originalName))}
+            </FileType>
           </FileMeta>
         </FileInfo>
         <ActionButtons>

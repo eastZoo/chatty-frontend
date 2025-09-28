@@ -10,6 +10,7 @@ import MessageStatus from "@/components/MessageStatus/MessageStatus";
 import socket from "@/lib/api/socket";
 import { type Message } from "@/lib/api/message";
 import { markChatAsRead } from "@/lib/api/chat";
+import { request } from "@/lib/api/axiosInstance";
 import {
   ChatWindowContainer,
   MessagesContainer,
@@ -303,36 +304,22 @@ const ChatWindow: React.FC = () => {
                         }}
                         isOwn={isOwn}
                         onDownload={async (file) => {
+                          console.log(file);
                           const shouldDownload = window.confirm(
                             `"${file.originalName}" 파일을 다운로드하시겠습니까?`
                           );
 
                           if (shouldDownload) {
                             try {
-                              // 파일 다운로드 URL 생성
-                              const downloadUrl = `${
-                                import.meta.env.VITE_API_BASE_URL
-                              }${file.url}`;
-
-                              // fetch로 파일 데이터 가져오기
-                              const response = await fetch(downloadUrl, {
+                              // request 함수를 사용하여 파일 다운로드
+                              const response = await request<Blob>({
                                 method: "GET",
-                                headers: {
-                                  Authorization: `Bearer ${localStorage.getItem(
-                                    "accessToken"
-                                  )}`, // 인증 토큰 추가
-                                },
+                                url: `/files/${file.id}`,
+                                responseType: "blob", // 파일 다운로드를 위해 blob 타입으로 설정
                               });
 
-                              if (!response.ok) {
-                                throw new Error("파일 다운로드 실패");
-                              }
-
-                              // Blob으로 변환
-                              const blob = await response.blob();
-
                               // 다운로드 링크 생성
-                              const url = window.URL.createObjectURL(blob);
+                              const url = window.URL.createObjectURL(response);
                               const link = document.createElement("a");
                               link.href = url;
                               link.download = file.originalName; // 원본 파일명으로 다운로드
