@@ -23,6 +23,10 @@ const LoginPage: React.FC = () => {
     onSuccess: async (res: any) => {
       console.log(res);
       if (res.success) {
+        // Access Token을 localStorage에 저장
+        if (res.data.accessToken) {
+          localStorage.setItem("chatty_accessToken", res.data.accessToken);
+        }
         await customLogin(res.data);
       } else {
         toast.error(res.message);

@@ -23,6 +23,8 @@ export default function useAuthToken() {
     } catch (error) {
       console.error("로그아웃 API 호출 실패:", error);
     }
+    // localStorage에서 Access Token 제거
+    localStorage.removeItem("access_token");
     setAdminInfo(null);
     navigate("/");
   };

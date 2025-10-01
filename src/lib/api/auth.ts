@@ -33,3 +33,10 @@ export const register = async (
     data,
   });
 };
+
+export const logout = async (): Promise<ResponseType<any>> => {
+  return request<ResponseType<any>>({
+    url: "/auth/logout",
+    method: "POST",
+  });
+};

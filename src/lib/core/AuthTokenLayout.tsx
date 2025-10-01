@@ -34,7 +34,7 @@ export default function AuthTokenLayout({ children }: AuthTokenLayoutProps) {
         // 인증 성공 시 소켓 연결
         if (!socket.connected) {
           socket.auth = {
-            token: localStorage.getItem("accessToken"),
+            token: localStorage.getItem("access_token"),
           };
           socket.connect();
           console.log("소켓 연결 시도");
