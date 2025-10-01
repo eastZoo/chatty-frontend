@@ -17,7 +17,6 @@ export default function AuthTokenLayout({ children }: AuthTokenLayoutProps) {
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    // 공개 경로
     const publicPaths = ["/login", "/register"];
 
     const authCheck = async () => {
@@ -27,29 +26,28 @@ export default function AuthTokenLayout({ children }: AuthTokenLayoutProps) {
         return;
       }
 
+      // 토큰이 없으면 바로 로그인 페이지로
+      const token = localStorage.getItem("chatty_accessToken");
+      if (!token) {
+        console.log("토큰이 없어서 로그인 페이지로 이동");
+        navigate("/login");
+        return;
+      }
+
       try {
-        // 인증 체크와 어드민 정보 동시 요청
-        await Promise.all([fetchAdminInfo()]);
-
-        // 인증 성공 시 소켓 연결
-        if (!socket.connected) {
-          socket.auth = {
-            token: localStorage.getItem("access_token"),
-          };
-          socket.connect();
-          console.log("소켓 연결 시도");
-        }
-
+        // 토큰이 있으면 유효성 검사 (첫 번째 요청에서만)
+        await fetchAdminInfo();
         setAuthorized(true);
       } catch (error) {
         console.error("인증 체크 실패:", error);
-        setAuthorized(false);
+        // 토큰이 유효하지 않으면 제거하고 로그인 페이지로
+        localStorage.removeItem("chatty_accessToken");
         navigate("/login");
       }
     };
 
     authCheck();
-  }, [pathname, navigate, fetchAdminInfo]);
+  }, [pathname.pathname, navigate, fetchAdminInfo]);
 
   // 컴포넌트 언마운트 시 소켓 연결 해제
   useEffect(() => {

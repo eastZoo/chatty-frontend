@@ -12,8 +12,8 @@ const socket = io(
     reconnectionDelay: 1000,
     reconnectionAttempts: 5,
     timeout: 20000,
-    auth: {
-      token: localStorage.getItem("accessToken"),
+    query: {
+      token: localStorage.getItem("chatty_accessToken"),
     },
   }
 );
@@ -26,16 +26,19 @@ socket.on("disconnect", (reason) => {
   console.log("Socket disconnected:", reason);
 });
 
+socket.on("error", (error) => {
+  console.error("Socket error:", error);
+});
+
 socket.on("reconnect", (attemptNumber) => {
   console.log("Socket reconnected after", attemptNumber, "attempts");
 });
 
-socket.on("reconnect_error", (error) => {
-  console.error("Socket reconnection error:", error);
-});
-
-socket.on("reconnect_failed", () => {
-  console.error("Socket reconnection failed");
-});
+// 토큰 업데이트 함수
+export const updateSocketToken = (newToken: string) => {
+  socket.io.opts.query = {
+    token: newToken,
+  };
+};
 
 export default socket;

@@ -24,7 +24,7 @@ export default function useAuthToken() {
       console.error("로그아웃 API 호출 실패:", error);
     }
     // localStorage에서 Access Token 제거
-    localStorage.removeItem("access_token");
+    localStorage.removeItem("chatty_accessToken");
     setAdminInfo(null);
     navigate("/");
   };
