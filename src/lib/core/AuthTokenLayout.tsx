@@ -38,6 +38,12 @@ export default function AuthTokenLayout({ children }: AuthTokenLayoutProps) {
         // 토큰이 있으면 유효성 검사 (첫 번째 요청에서만)
         await fetchAdminInfo();
         setAuthorized(true);
+
+        // 인증 성공 후 소켓 연결
+        if (!socket.connected) {
+          console.log("인증 성공. 소켓 연결 시도...");
+          socket.connect();
+        }
       } catch (error) {
         console.error("인증 체크 실패:", error);
         // 토큰이 유효하지 않으면 제거하고 로그인 페이지로
