@@ -1,5 +1,6 @@
 import { useSetRecoilState } from "recoil";
 import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { request } from "@/lib/api/axiosInstance";
 import { useNavigate } from "react-router";
 import { adminInfoSelector } from "@/store/adminInfo";
@@ -7,9 +8,12 @@ import { adminInfoSelector } from "@/store/adminInfo";
 export default function useAuthToken() {
   const setAdminInfo = useSetRecoilState(adminInfoSelector);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const customLogin = async (adminInfo: any) => {
     try {
+      await queryClient.cancelQueries();
+      queryClient.clear();
       setAdminInfo(adminInfo);
       navigate("/");
     } catch (e: any) {
@@ -25,6 +29,8 @@ export default function useAuthToken() {
     }
     // localStorage에서 Access Token 제거
     localStorage.removeItem("chatty_accessToken");
+    await queryClient.cancelQueries();
+    queryClient.clear();
     setAdminInfo(null);
     navigate("/");
   };

@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getPrivateChat } from "@/lib/api/chat";
+import { getPrivateChat, type Chat } from "@/lib/api/chat";
 import ChatWindow from "@/components/ChatWindow/ChatWindow";
 import { useRecoilState } from "recoil";
 import { selectedChatState } from "@/store/atoms";
@@ -11,15 +11,28 @@ const PrivateChatPage: React.FC = () => {
   const { friendId } = useParams<{ friendId: string }>();
   const [, setSelectedChat] = useRecoilState(selectedChatState);
 
-  const { isLoading } = useQuery({
+  const { data, isLoading } = useQuery<Chat>({
     queryKey: ["privateChat", friendId],
-    queryFn: () =>
-      getPrivateChat(friendId || "").then((data) => {
-        console.log("data", data);
-        setSelectedChat(data);
-      }),
+    queryFn: async () => {
+      const targetFriendId = friendId ?? "";
+      const data = await getPrivateChat(targetFriendId);
+      return data;
+    },
     enabled: !!friendId,
   });
+
+  useEffect(() => {
+    if (data) {
+      console.log("data", data);
+      setSelectedChat(data);
+    }
+  }, [data, setSelectedChat]);
+
+  useEffect(() => {
+    return () => {
+      setSelectedChat(null);
+    };
+  }, [setSelectedChat]);
 
   if (isLoading) return <div>Loading...</div>;
 
