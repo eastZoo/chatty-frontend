@@ -18,7 +18,7 @@ const AppWithTheme: React.FC = () => {
   const setDarkMode = useSetRecoilState(darkModeState);
   const currentTheme = isDarkMode ? darkTheme : lightTheme;
 
-  console.log("1.11.10");
+  console.log("v1.11.10");
   // localStorage에서 다크모드 설정을 초기화
   useEffect(() => {
     initializeDarkMode(setDarkMode);
