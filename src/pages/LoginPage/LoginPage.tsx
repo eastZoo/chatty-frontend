@@ -4,6 +4,7 @@ import { login, type LoginRequest } from "@/lib/api/auth";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import useAuthToken from "@/lib/hooks/useAuthToken";
+import { updateSocketToken } from "@/lib/api/socket";
 import {
   LoginContainer,
   LoginForm,
@@ -26,6 +27,7 @@ const LoginPage: React.FC = () => {
         // Access Token을 localStorage에 저장
         if (res.data.accessToken) {
           localStorage.setItem("chatty_accessToken", res.data.accessToken);
+          updateSocketToken(res.data.accessToken);
         }
         await customLogin(res.data);
       } else {

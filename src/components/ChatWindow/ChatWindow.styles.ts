@@ -9,6 +9,7 @@ export const ChatWindowContainer = styled.div`
   position: relative;
   box-sizing: border-box;
   overflow: hidden;
+  --keyboard-offset: 0px;
 `;
 
 export const MessagesContainer = styled.div`
@@ -18,9 +19,11 @@ export const MessagesContainer = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   padding: 5px 20px;
+  padding-bottom: calc(20px + var(--keyboard-offset, 0px));
   /* 모바일에서 스크롤 최적화 */
   -webkit-overflow-scrolling: touch;
   min-height: 0; /* flex 아이템이 축소될 수 있도록 */
+  transition: padding-bottom 0.2s ease;
 
   /* 스크롤바 숨기기 (모바일에서) */
   &::-webkit-scrollbar {

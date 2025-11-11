@@ -73,6 +73,7 @@ const ChatWindow: React.FC = () => {
   const [isUserAtBottom, setIsUserAtBottom] = useState(true); // 사용자가 맨 아래에 있는지
   const [cursor, setCursor] = useState<string | undefined>(undefined); // 페이지네이션 커서
   const [isReadyToShow, setIsReadyToShow] = useState(false); // 초기 로드 완료 후 표시 준비 여부
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null); // 메시지 끝 지점 참조 (자동 스크롤용)
@@ -84,6 +85,80 @@ const ChatWindow: React.FC = () => {
   // 메모이제이션된 값들
   const chatId = useMemo(() => selectedChat?.id, [selectedChat?.id]);
   const currentUserId = adminInfo?.id;
+  const containerStyle = useMemo(
+    () =>
+      ({
+        "--keyboard-offset": `${keyboardOffset}px`,
+      } as React.CSSProperties),
+    [keyboardOffset]
+  );
+
+  /**
+   * 모바일 웹뷰에서 가상 키보드 높이에 따라 하단 여백을 조정
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const viewport = window.visualViewport;
+
+    if (!viewport) {
+      const handleFocusIn = () => {
+        setKeyboardOffset(0);
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
+        }, 120);
+      };
+
+      const handleFocusOut = () => {
+        setKeyboardOffset(0);
+      };
+
+      window.addEventListener("focusin", handleFocusIn);
+      window.addEventListener("focusout", handleFocusOut);
+
+      return () => {
+        window.removeEventListener("focusin", handleFocusIn);
+        window.removeEventListener("focusout", handleFocusOut);
+      };
+    }
+
+    let rafId = 0;
+
+    const updateOffset = () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = window.requestAnimationFrame(() => {
+        const offset =
+          window.innerHeight - viewport.height - viewport.offsetTop;
+        setKeyboardOffset(offset > 0 ? offset : 0);
+      });
+    };
+
+    viewport.addEventListener("resize", updateOffset);
+    viewport.addEventListener("scroll", updateOffset);
+    window.addEventListener("orientationchange", updateOffset);
+    window.addEventListener("focusin", updateOffset);
+    window.addEventListener("focusout", updateOffset);
+
+    updateOffset();
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+      viewport.removeEventListener("resize", updateOffset);
+      viewport.removeEventListener("scroll", updateOffset);
+      window.removeEventListener("orientationchange", updateOffset);
+      window.removeEventListener("focusin", updateOffset);
+      window.removeEventListener("focusout", updateOffset);
+    };
+  }, []);
 
   /**
    * 스크롤 위치 감지 및 자동 스크롤 처리
@@ -494,6 +569,22 @@ const ChatWindow: React.FC = () => {
   /**
    * 채팅방이 선택되지 않은 경우 빈 상태 화면 표시
    */
+  const handleInputFocus = useCallback(() => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }, 100);
+  }, []);
+
+  const handleInputBlur = useCallback(() => {
+    if (typeof window !== "undefined" && window.visualViewport) {
+      return;
+    }
+    setKeyboardOffset(0);
+  }, []);
+
   if (!selectedChat) {
     return (
       <ChatWindowContainer>
@@ -565,7 +656,7 @@ const ChatWindow: React.FC = () => {
   };
 
   return (
-    <ChatWindowContainer>
+    <ChatWindowContainer style={containerStyle}>
       <MessagesContainer
         ref={messagesContainerRef}
         style={{
@@ -692,7 +783,12 @@ const ChatWindow: React.FC = () => {
       </MessagesContainer>
 
       {/* 메시지 입력 컴포넌트 */}
-      <MessageInput chatId={chatId} />
+      <MessageInput
+        chatId={chatId}
+        keyboardOffset={keyboardOffset}
+        onInputFocus={handleInputFocus}
+        onInputBlur={handleInputBlur}
+      />
     </ChatWindowContainer>
   );
 };

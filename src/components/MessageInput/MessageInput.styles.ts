@@ -6,15 +6,15 @@ export const InputContainer = styled.form`
   background: ${({ theme }) => theme.colors.bgSecondary};
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   padding: 12px 20px;
+  padding-bottom: calc(max(12px, env(safe-area-inset-bottom)) + var(--keyboard-offset, 0px));
   box-sizing: border-box;
   width: 100%;
   gap: 12px;
-  /* iOS 안전 영역 대응 */
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 100;
   flex-shrink: 0; /* 축소되지 않도록 */
+  transition: padding-bottom 0.2s ease;
 `;
 
 export const TextInput = styled.input`

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { FiCode, FiImage, FiFile, FiX } from "react-icons/fi";
 import socket from "@/lib/api/socket";
@@ -12,6 +12,9 @@ import * as S from "./MessageInput.styles";
 
 interface MessageInputProps {
   chatId?: string;
+  keyboardOffset?: number;
+  onInputFocus?: () => void;
+  onInputBlur?: () => void;
 }
 
 interface CodeAttachment {
@@ -32,7 +35,12 @@ interface FileAttachmentData {
   uploadedBy?: any;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
+const MessageInput: React.FC<MessageInputProps> = ({
+  chatId,
+  keyboardOffset = 0,
+  onInputFocus,
+  onInputBlur,
+}) => {
   const [content, setContent] = useState("");
   const [selectedChat] = useRecoilState(selectedChatState);
   const adminInfo = useRecoilValue(adminInfoSelector);
@@ -82,6 +90,14 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
   // 입력 필드에 대한 ref 생성
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const keyboardStyle = useMemo(
+    () =>
+      ({
+        "--keyboard-offset": `${keyboardOffset}px`,
+      }) as React.CSSProperties,
+    [keyboardOffset]
+  );
 
   // 메시지 전송 후 입력 필드에 포커스를 유지
   const handleSubmit = useCallback(
@@ -143,6 +159,29 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
   }, []);
+
+  const triggerFocusAdjust = useCallback(
+    (element?: HTMLElement | null) => {
+      onInputFocus?.();
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 150);
+      }
+    },
+    [onInputFocus]
+  );
+
+  const handleTextInputFocus = useCallback(() => {
+    triggerFocusAdjust(inputRef.current);
+  }, [triggerFocusAdjust]);
+
+  const handleBlur = useCallback(() => {
+    onInputBlur?.();
+  }, [onInputBlur]);
 
   // 기능 선택
   const handleFeatureSelect = useCallback(
@@ -429,6 +468,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
 
       {/* 입력 영역 */}
       <InputContainer
+        style={keyboardStyle}
         onSubmit={
           activeFeature === "code"
             ? (e) => {
@@ -447,6 +487,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
               languageOptions.find((lang) => lang.value === selectedLanguage)
                 ?.label || "JavaScript"
             } 코드를 입력하세요...`}
+            onFocus={(e) => triggerFocusAdjust(e.currentTarget)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 if (e.shiftKey) {
@@ -459,6 +500,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
                 }
               }
             }}
+            onBlur={handleBlur}
           />
         ) : (
           <TextInput
@@ -468,6 +510,8 @@ const MessageInput: React.FC<MessageInputProps> = ({ chatId }) => {
             value={content}
             onChange={handleChange}
             maxLength={1000}
+            onFocus={handleTextInputFocus}
+            onBlur={handleBlur}
           />
         )}
 
