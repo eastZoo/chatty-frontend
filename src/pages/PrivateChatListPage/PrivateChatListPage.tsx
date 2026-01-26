@@ -25,7 +25,6 @@ const PrivateChatListPage: React.FC = () => {
     data: chats,
     isLoading,
     isError,
-    error,
     refetch,
   } = useQuery({
     queryKey: ["privateChats"],
@@ -77,10 +76,7 @@ const PrivateChatListPage: React.FC = () => {
         });
       }
       // 백그라운드 리페치만 수행 (캐시는 유지, 로딩 상태로 덮지 않음)
-      queryClient.refetchQueries({
-        queryKey: ["privateChats"],
-        cancelRefetch: false,
-      });
+      queryClient.refetchQueries({ queryKey: ["privateChats"] });
     };
 
     const handleChatListUpdate = (data: any) => {
@@ -93,24 +89,15 @@ const PrivateChatListPage: React.FC = () => {
             );
           });
         }
-        queryClient.refetchQueries({
-          queryKey: ["privateChats"],
-          cancelRefetch: false,
-        });
+        queryClient.refetchQueries({ queryKey: ["privateChats"] });
       }
       if (data.type === "group") {
-        queryClient.refetchQueries({
-          queryKey: ["groupChats"],
-          cancelRefetch: false,
-        });
+        queryClient.refetchQueries({ queryKey: ["groupChats"] });
       }
     };
 
     const handleMessageRead = () => {
-      queryClient.refetchQueries({
-        queryKey: ["privateChats"],
-        cancelRefetch: false,
-      });
+      queryClient.refetchQueries({ queryKey: ["privateChats"] });
     };
 
     socket.on("newMessage", handleNewMessage);
