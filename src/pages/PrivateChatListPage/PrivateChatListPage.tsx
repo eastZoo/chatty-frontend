@@ -98,6 +98,7 @@ const PrivateChatListPage: React.FC = () => {
 
     const handleMessageRead = () => {
       queryClient.refetchQueries({ queryKey: ["privateChats"] });
+
     };
 
     socket.on("newMessage", handleNewMessage);

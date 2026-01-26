@@ -88,9 +88,13 @@ export default function TabNotificationHandler() {
       const message = data.message;
       const isOwn = message.sender?.id === user.id;
       if (isOwn) return;
-      // 지금 보고 있는 채팅방으로 온 메시지면 알림 안 함
+      // 탭이 보일 때만 "현재 채팅"으로 오면 알림 생략 (다른 탭/창/최소화 시에는 항상 알림)
+      const isTabVisible =
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible";
       const currentChatId = selectedChat?.id;
       if (
+        isTabVisible &&
         currentChatId &&
         (message.privateChat?.id === currentChatId ||
           message.chat?.id === currentChatId)

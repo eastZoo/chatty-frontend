@@ -46,6 +46,8 @@ const MESSAGE_LOAD_LIMIT = 20; // 스크롤 업 시 추가로 가져올 메시�
 const SCROLL_THRESHOLD = 100; // 스크롤 감지 임계값 (픽셀)
 const MESSAGE_LOAD_TIMEOUT_MS = 10000; // 초기 메시지 응답 대기 시간
 const SOCKET_CONNECT_POLL_MS = 500; // 소켓 연결 폴링 간격
+const READY_FALLBACK_MS = 3500; // 이 시간 후에도 표시 안 되면 강제 표시 + 재요청
+const RETRY_GET_MESSAGES_DELAY_MS = 800; // 재요청 전 대기
 
 interface ChatListUpdateData {
   chatId?: string;
@@ -86,6 +88,8 @@ const ChatWindow: React.FC = () => {
   const messageLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   ); // 초기 메시지 응답 타임아웃
+  const syncOnVisibilityRef = useRef(false); // 탭 복귀/재연결 시 수신 메시지를 교체할지 여부
+  const retryGetMessagesRef = useRef(false); // 안전 타이머에서 getMessages 재요청 1회만 하기 위함
 
   // 메모이제이션된 값들
   const chatId = useMemo(() => selectedChat?.id, [selectedChat?.id]);
@@ -213,6 +217,16 @@ const ChatWindow: React.FC = () => {
           }
         });
       });
+    }
+    // 메시지 0건인 빈 채팅도 메시지 영역 표시 (스크롤 없이 바로 준비 완료)
+    if (
+      !isLoading &&
+      isInitialLoadRef.current &&
+      !isReadyToShow &&
+      messages.length === 0
+    ) {
+      setIsReadyToShow(true);
+      isInitialLoadRef.current = false;
     }
   }, [isLoading, messages.length, isReadyToShow]);
 
@@ -347,7 +361,6 @@ const ChatWindow: React.FC = () => {
           clearTimeout(messageLoadTimeoutRef.current);
           messageLoadTimeoutRef.current = null;
         }
-        // 기존 형식과의 호환성을 위해 배열인지 확인
         const isLegacyFormat = Array.isArray(response);
         const messagesData = isLegacyFormat
           ? (response as Message[])
@@ -366,13 +379,41 @@ const ChatWindow: React.FC = () => {
           hasMore ? "(더 있음)" : "(마지막)"
         );
 
+        // 탭 복귀 또는 소켓 재연결 후 동기화: 수신 메시지로 전체 교체
+        if (syncOnVisibilityRef.current) {
+          syncOnVisibilityRef.current = false;
+          setMessages(messagesData ?? []);
+          setIsLoading(false);
+          setIsReadyToShow(false);
+          setHasMoreMessages(hasMore);
+          setCursor(newCursor);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (messagesContainerRef.current && messagesEndRef.current) {
+                messagesContainerRef.current.scrollTop =
+                  messagesContainerRef.current.scrollHeight;
+              }
+              setIsReadyToShow(true);
+            });
+          });
+          // RAF/DOM 타이밍과 무관하게 한 번은 표시 확정 (간헐적 빈 화면 방지)
+          setTimeout(() => setIsReadyToShow(true), 150);
+          return;
+        }
+
         if (isInitialLoadRef.current) {
           // 초기 로드: 메시지 교체 (아직 표시하지 않음)
-          setMessages(messagesData ?? []);
+          const list = messagesData ?? [];
+          setMessages(list);
           setIsLoading(false);
           setIsReadyToShow(false); // 스크롤 위치 설정 전까지 숨김
           setHasMoreMessages(hasMore);
           setCursor(newCursor);
+          // 메시지 0건이면 스크롤 대기 없이 바로 표시 (빈 채팅방도 영역 노출)
+          if (list.length === 0) {
+            setIsReadyToShow(true);
+            isInitialLoadRef.current = false;
+          }
         } else {
           // 추가 로드: 이전 메시지 앞에 추가하고 스크롤 위치 유지
           if (messagesStartRef.current && messagesContainerRef.current) {
@@ -531,12 +572,32 @@ const ChatWindow: React.FC = () => {
       };
     }
 
+    // 소켓 재연결 시 방 재입장 + 메시지 재요청 (두 branch에서 공통으로 등록)
+    const onReconnect = () => {
+      if (
+        !chatId ||
+        !selectedChat?.type ||
+        joinedRoomRef.current !== chatId
+      ) {
+        return;
+      }
+      syncOnVisibilityRef.current = true;
+      socket.emit("joinRoom", chatId);
+      socket.emit("getMessages", {
+        roomId: chatId,
+        chatType: selectedChat.type,
+        limit: INITIAL_MESSAGE_LIMIT,
+        direction: "latest",
+      });
+    };
+
     // 소켓이 연결되지 않았으면 연결 대기 (connect 이벤트 + 폴링으로 누락 방지)
     let cleanupChat: (() => void) | undefined;
     if (!ensureSocketConnected()) {
       const onConnect = () => {
         console.log("소켓 연결 완료:", socket.id);
         if (!cleanupChat) cleanupChat = initializeChat();
+        socket.on("connect", onReconnect);
       };
       socket.on("connect", onConnect);
 
@@ -544,12 +605,14 @@ const ChatWindow: React.FC = () => {
         if (socket.connected) {
           clearInterval(connectPoll);
           if (!cleanupChat) cleanupChat = initializeChat();
+          socket.on("connect", onReconnect);
         }
       }, SOCKET_CONNECT_POLL_MS);
 
       return () => {
         clearInterval(connectPoll);
         socket.off("connect", onConnect);
+        socket.off("connect", onReconnect);
         if (cleanupChat) cleanupChat();
 
         if (chatId && adminInfo?.id) {
@@ -564,9 +627,11 @@ const ChatWindow: React.FC = () => {
 
     // 소켓이 이미 연결된 경우 바로 초기화
     cleanupChat = initializeChat();
+    socket.on("connect", onReconnect);
 
     // 최종 cleanup 함수 반환
     return () => {
+      socket.off("connect", onReconnect);
       console.log("Cleanup: leaving room", chatId);
 
       // 채팅 초기화 함수의 cleanup 실행
@@ -604,8 +669,65 @@ const ChatWindow: React.FC = () => {
       setIsUserAtBottom(true);
       setIsReadyToShow(false);
       isInitialLoadRef.current = true;
+      retryGetMessagesRef.current = false;
     };
   }, [chatId, selectedChat?.type, adminInfo?.id]);
+
+  /**
+   * 탭 복귀 시 메시지 재동기화 (다른 탭/최소화 후 돌아왔을 때 소켓이 끊겼거나 메시지 누락 방지)
+   */
+  useEffect(() => {
+    if (!chatId || !selectedChat?.type) return;
+
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!socket.connected) return;
+
+      syncOnVisibilityRef.current = true;
+      joinedRoomRef.current = chatId;
+      socket.emit("joinRoom", chatId);
+      socket.emit("getMessages", {
+        roomId: chatId,
+        chatType: selectedChat.type,
+        limit: INITIAL_MESSAGE_LIMIT,
+        direction: "latest",
+      });
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [chatId, selectedChat?.type]);
+
+  /**
+   * 안전 코드: 지정 시간 후에도 메시지 영역이 안 보이면 강제 표시 + getMessages 1회 재시도
+   */
+  useEffect(() => {
+    if (!chatId || !selectedChat?.type) return;
+
+    const timer = setTimeout(() => {
+      const stillLoading = isLoading;
+      const stillInitial = isInitialLoadRef.current && !isReadyToShow;
+      if (!stillLoading && !stillInitial) return;
+
+      setIsLoading(false);
+      setIsReadyToShow(true);
+      isInitialLoadRef.current = false;
+
+      if (!retryGetMessagesRef.current) {
+        retryGetMessagesRef.current = true;
+        setTimeout(() => {
+          socket.emit("getMessages", {
+            roomId: chatId,
+            chatType: selectedChat.type,
+            limit: INITIAL_MESSAGE_LIMIT,
+            direction: "latest",
+          });
+        }, RETRY_GET_MESSAGES_DELAY_MS);
+      }
+    }, READY_FALLBACK_MS);
+
+    return () => clearTimeout(timer);
+  }, [chatId, selectedChat?.type, isLoading, isReadyToShow]);
 
   /**
    * 채팅방이 선택되지 않은 경우 빈 상태 화면 표시
