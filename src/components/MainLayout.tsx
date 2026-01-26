@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import BottomNavbar from "@/components/BottomNavbar/BottomNavbar";
 import GlobalHeader from "@/components/GlobalHeader/GlobalHeader";
+import TabNotificationHandler from "@/components/TabNotificationHandler/TabNotificationHandler";
 import styled from "styled-components";
 
 const LayoutContainer = styled.div`
@@ -36,6 +37,7 @@ const MainLayout: React.FC = () => {
 
   return (
     <LayoutContainer>
+      <TabNotificationHandler />
       <GlobalHeader />
       <ContentContainer hideNavbar={hideNavbar}>
         <Outlet />
