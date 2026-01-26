@@ -3,13 +3,14 @@
  */
 
 /**
- * ISO 날짜 문자열을 한국 시간으로 포맷팅
- * @param timestamp - ISO 형식의 날짜 문자열
- * @returns "YYYY-MM-DD HH:MM AM/PM" 형식의 문자열
+ * ISO 날짜 문자열을 로컬 시간으로 포맷팅
+ * @param timestamp - ISO 형식의 날짜 문자열 (UTC 또는 로컬 시간)
+ * @returns "YYYY-MM-DD HH:MM AM/PM" 형식의 문자열 (로컬 타임존)
  */
 export const formatTimestamp = (timestamp: string): string => {
   const date = new Date(timestamp);
-  date.setHours(date.getHours() + 9); // UTC+9 (한국 시간)
+  // new Date()는 ISO 문자열을 자동으로 로컬 타임존으로 변환하므로
+  // 수동으로 시간을 더할 필요가 없습니다.
 
   const year = date.getFullYear();
   const month = ("0" + (date.getMonth() + 1)).slice(-2);
