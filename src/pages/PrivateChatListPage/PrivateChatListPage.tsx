@@ -21,31 +21,34 @@ const PrivateChatListPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: chats, isLoading } = useQuery({
+  const {
+    data: chats,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["privateChats"],
     queryFn: getPrivateChatList,
     enabled: !!adminInfo,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
-  // 실시간 메시지 이벤트 처리
+  // 실시간 메시지 이벤트 처리 (캐시만 갱신, invalidate 제거로 깜빡임/로딩 덜어줌)
   useEffect(() => {
-    const handleNewMessage = (message: any) => {
-      console.log("채팅 목록 업데이트 - 새 메시지:", message);
+    if (!adminInfo?.id) return;
 
-      // 현재 사용자가 보낸 메시지가 아닌 경우에만 읽지 않은 카운트 증가
+    const handleNewMessage = (message: any) => {
       const isOwnMessage = message.sender?.id === adminInfo?.id;
 
       if (!isOwnMessage) {
-        // 캐시된 데이터를 즉시 업데이트
         queryClient.setQueryData(["privateChats"], (oldData: any) => {
           if (!oldData) return oldData;
-
           return oldData.map((chat: any) => {
-            // 메시지가 해당 채팅방에 속하는지 확인
             const isMessageForThisChat =
               message.privateChat?.id === chat.id ||
               message.chat?.id === chat.id;
-
             if (isMessageForThisChat) {
               return {
                 ...chat,
@@ -57,15 +60,12 @@ const PrivateChatListPage: React.FC = () => {
           });
         });
       } else {
-        // 자신이 보낸 메시지인 경우 마지막 메시지만 업데이트
         queryClient.setQueryData(["privateChats"], (oldData: any) => {
           if (!oldData) return oldData;
-
           return oldData.map((chat: any) => {
             const isMessageForThisChat =
               message.privateChat?.id === chat.id ||
               message.chat?.id === chat.id;
-
             if (isMessageForThisChat) {
               return {
                 ...chat,
@@ -76,48 +76,43 @@ const PrivateChatListPage: React.FC = () => {
           });
         });
       }
-
-      // 백그라운드에서 서버 데이터와 동기화
-      queryClient.invalidateQueries({ queryKey: ["privateChats"] });
+      // 백그라운드 리페치만 수행 (캐시는 유지, 로딩 상태로 덮지 않음)
+      queryClient.refetchQueries({
+        queryKey: ["privateChats"],
+        cancelRefetch: false,
+      });
     };
 
     const handleChatListUpdate = (data: any) => {
-      console.log("채팅방 목록 업데이트 이벤트:", data);
-
       if (data.type === "private" || data.type === "read") {
-        // 프라이빗 채팅 관련 업데이트 - 즉시 리페치
-        queryClient.invalidateQueries({ queryKey: ["privateChats"] });
-
-        // 읽음 상태 업데이트인 경우 추가 처리
         if (data.type === "read" && data.chatId) {
-          console.log(`채팅 ${data.chatId} 읽음 상태 업데이트`);
-          // 캐시된 데이터를 즉시 업데이트
           queryClient.setQueryData(["privateChats"], (oldData: any) => {
             if (!oldData) return oldData;
-
-            return oldData.map((chat: any) => {
-              if (chat.id === data.chatId) {
-                return { ...chat, unreadCount: 0 };
-              }
-              return chat;
-            });
+            return oldData.map((chat: any) =>
+              chat.id === data.chatId ? { ...chat, unreadCount: 0 } : chat
+            );
           });
         }
+        queryClient.refetchQueries({
+          queryKey: ["privateChats"],
+          cancelRefetch: false,
+        });
       }
-
       if (data.type === "group") {
-        // 그룹 채팅 관련 업데이트 (필요시)
-        queryClient.invalidateQueries({ queryKey: ["groupChats"] });
+        queryClient.refetchQueries({
+          queryKey: ["groupChats"],
+          cancelRefetch: false,
+        });
       }
     };
 
-    const handleMessageRead = (data: any) => {
-      console.log("메시지 읽음 처리:", data);
-      // 읽음 상태 업데이트
-      queryClient.invalidateQueries({ queryKey: ["privateChats"] });
+    const handleMessageRead = () => {
+      queryClient.refetchQueries({
+        queryKey: ["privateChats"],
+        cancelRefetch: false,
+      });
     };
 
-    // 소켓 이벤트 리스너 등록
     socket.on("newMessage", handleNewMessage);
     socket.on("chatListUpdate", handleChatListUpdate);
     socket.on("messageRead", handleMessageRead);
@@ -127,15 +122,29 @@ const PrivateChatListPage: React.FC = () => {
       socket.off("chatListUpdate", handleChatListUpdate);
       socket.off("messageRead", handleMessageRead);
     };
-  }, [queryClient]);
+  }, [adminInfo?.id, queryClient]);
 
-  if (isLoading) return <div>로딩중...</div>;
+  if (isLoading && !chats) return <div>로딩중...</div>;
+
+  if (isError) {
+    return (
+      <ChatListContainer>
+        <div style={{ padding: 16, textAlign: "center" }}>
+          <p>채팅 목록을 불러오지 못했습니다.</p>
+          <button type="button" onClick={() => refetch()}>
+            다시 시도
+          </button>
+        </div>
+      </ChatListContainer>
+    );
+  }
 
   return (
     <ChatListContainer>
       {chats && chats.length > 0 ? (
         chats.map((chat: any) => {
           const friend = chat.otherUser;
+          if (!friend) return null;
           let lastMessage = chat.lastMessage || "";
           if (lastMessage.length > 20) {
             lastMessage = lastMessage.slice(0, 20) + "...";
@@ -146,10 +155,10 @@ const PrivateChatListPage: React.FC = () => {
               onClick={() => navigate(`/chat/private/${friend.id}`)}
             >
               <ChatItemAvatar>
-                {friend.username.charAt(0).toUpperCase()}
+                {friend.username?.charAt(0).toUpperCase() ?? "?"}
               </ChatItemAvatar>
               <ChatItemContent>
-                <ChatItemName>{friend.username}</ChatItemName>
+                <ChatItemName>{friend.username ?? ""}</ChatItemName>
                 <ChatItemLastMessage>{lastMessage}</ChatItemLastMessage>
               </ChatItemContent>
               <UnreadBadge count={chat.unreadCount} />

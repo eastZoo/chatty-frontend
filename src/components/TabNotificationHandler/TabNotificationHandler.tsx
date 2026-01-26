@@ -27,18 +27,30 @@ export default function TabNotificationHandler() {
   const [unreadCount, setUnreadCount] = useState(0);
   const warmupDone = useRef(false);
 
-  // 사용자 첫 클릭 시 알림음 잠금 해제 (브라우저 정책)
+  // 사용자 제스처 시 알림음 잠금 해제 (클릭·키·터치·포커스) — 백그라운드 재생을 위해 필수
   useEffect(() => {
-    if (warmupDone.current) return;
     const onFirstInteraction = () => {
+      if (warmupDone.current) return;
       warmupNotificationSound();
       warmupDone.current = true;
     };
     document.addEventListener("click", onFirstInteraction, { once: true });
     document.addEventListener("keydown", onFirstInteraction, { once: true });
+    document.addEventListener("touchstart", onFirstInteraction, { once: true });
+    window.addEventListener(
+      "focus",
+      () => {
+        if (!warmupDone.current) {
+          warmupNotificationSound();
+          warmupDone.current = true;
+        }
+      },
+      { once: true }
+    );
     return () => {
       document.removeEventListener("click", onFirstInteraction);
       document.removeEventListener("keydown", onFirstInteraction);
+      document.removeEventListener("touchstart", onFirstInteraction);
     };
   }, []);
 

@@ -1,8 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRecoilValue } from "recoil";
 import BottomNavbar from "@/components/BottomNavbar/BottomNavbar";
 import GlobalHeader from "@/components/GlobalHeader/GlobalHeader";
 import TabNotificationHandler from "@/components/TabNotificationHandler/TabNotificationHandler";
+import { adminInfoSelector } from "@/store/adminInfo";
+import { getPrivateChatList } from "@/lib/api/chat";
 import styled from "styled-components";
 
 const LayoutContainer = styled.div`
@@ -32,8 +36,18 @@ const ContentContainer = styled.div<{ hideNavbar: boolean }>`
 
 const MainLayout: React.FC = () => {
   const location = useLocation();
-  // 경로가 /chat/private로 시작하면 BottomNavbar 숨김
+  const queryClient = useQueryClient();
+  const adminInfo = useRecoilValue(adminInfoSelector);
   const hideNavbar = location.pathname.startsWith("/chat/private");
+
+  // 진입 시 채팅 목록 프리페치 (목록 페이지 진입 시 즉시 표시)
+  useEffect(() => {
+    if (!adminInfo?.id) return;
+    queryClient.prefetchQuery({
+      queryKey: ["privateChats"],
+      queryFn: getPrivateChatList,
+    });
+  }, [adminInfo?.id, queryClient]);
 
   return (
     <LayoutContainer>

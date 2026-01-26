@@ -44,6 +44,8 @@ import {
 const INITIAL_MESSAGE_LIMIT = 20; // 초기 로드 시 가져올 메시지 수
 const MESSAGE_LOAD_LIMIT = 20; // 스크롤 업 시 추가로 가져올 메시지 수
 const SCROLL_THRESHOLD = 100; // 스크롤 감지 임계값 (픽셀)
+const MESSAGE_LOAD_TIMEOUT_MS = 10000; // 초기 메시지 응답 대기 시간
+const SOCKET_CONNECT_POLL_MS = 500; // 소켓 연결 폴링 간격
 
 interface ChatListUpdateData {
   chatId?: string;
@@ -81,6 +83,9 @@ const ChatWindow: React.FC = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null); // 메시지 컨테이너 참조
   const joinedRoomRef = useRef<string | null>(null); // 현재 가입한 소켓 방 추적
   const isInitialLoadRef = useRef(true); // 초기 로드 여부
+  const messageLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  ); // 초기 메시지 응답 타임아웃
 
   // 메모이제이션된 값들
   const chatId = useMemo(() => selectedChat?.id, [selectedChat?.id]);
@@ -338,6 +343,10 @@ const ChatWindow: React.FC = () => {
       const handlePreviousMessages = (
         response: PreviousMessagesResponse | Message[]
       ): void => {
+        if (messageLoadTimeoutRef.current) {
+          clearTimeout(messageLoadTimeoutRef.current);
+          messageLoadTimeoutRef.current = null;
+        }
         // 기존 형식과의 호환성을 위해 배열인지 확인
         const isLegacyFormat = Array.isArray(response);
         const messagesData = isLegacyFormat
@@ -359,7 +368,7 @@ const ChatWindow: React.FC = () => {
 
         if (isInitialLoadRef.current) {
           // 초기 로드: 메시지 교체 (아직 표시하지 않음)
-          setMessages(messagesData);
+          setMessages(messagesData ?? []);
           setIsLoading(false);
           setIsReadyToShow(false); // 스크롤 위치 설정 전까지 숨김
           setHasMoreMessages(hasMore);
@@ -452,7 +461,15 @@ const ChatWindow: React.FC = () => {
        */
       const handleErrorMessage = (data: SocketErrorMessage): void => {
         console.error("소켓 에러 메시지 수신:", data);
+        if (messageLoadTimeoutRef.current) {
+          clearTimeout(messageLoadTimeoutRef.current);
+          messageLoadTimeoutRef.current = null;
+        }
         setIsLoading(false);
+        if (isInitialLoadRef.current) {
+          isInitialLoadRef.current = false;
+          setIsReadyToShow(true);
+        }
       };
 
       // 소켓 이벤트 리스너 등록
@@ -488,8 +505,25 @@ const ChatWindow: React.FC = () => {
         direction: "latest", // 최신 메시지부터
       });
 
+      // 초기 로드 시 응답이 없으면 타임아웃 후 로딩 해제 (깜빡임/멈춤 방지)
+      if (messageLoadTimeoutRef.current) {
+        clearTimeout(messageLoadTimeoutRef.current);
+      }
+      messageLoadTimeoutRef.current = setTimeout(() => {
+        if (!isInitialLoadRef.current) return;
+        messageLoadTimeoutRef.current = null;
+        setIsLoading(false);
+        setMessages([]);
+        setIsReadyToShow(true);
+        isInitialLoadRef.current = false;
+      }, MESSAGE_LOAD_TIMEOUT_MS);
+
       // cleanup 함수 반환 (이벤트 리스너 제거)
       return () => {
+        if (messageLoadTimeoutRef.current) {
+          clearTimeout(messageLoadTimeoutRef.current);
+          messageLoadTimeoutRef.current = null;
+        }
         socket.off("previousMessages", handlePreviousMessages);
         socket.off("newMessage", handleNewMessage);
         socket.off("chatListUpdate", handleChatListUpdate);
@@ -497,20 +531,27 @@ const ChatWindow: React.FC = () => {
       };
     }
 
-    // 소켓이 연결되지 않았으면 연결 대기
+    // 소켓이 연결되지 않았으면 연결 대기 (connect 이벤트 + 폴링으로 누락 방지)
     let cleanupChat: (() => void) | undefined;
     if (!ensureSocketConnected()) {
       const onConnect = () => {
         console.log("소켓 연결 완료:", socket.id);
-        cleanupChat = initializeChat();
+        if (!cleanupChat) cleanupChat = initializeChat();
       };
       socket.on("connect", onConnect);
 
+      const connectPoll = setInterval(() => {
+        if (socket.connected) {
+          clearInterval(connectPoll);
+          if (!cleanupChat) cleanupChat = initializeChat();
+        }
+      }, SOCKET_CONNECT_POLL_MS);
+
       return () => {
+        clearInterval(connectPoll);
         socket.off("connect", onConnect);
         if (cleanupChat) cleanupChat();
 
-        // 채팅방을 나갈 때 읽음 상태 업데이트
         if (chatId && adminInfo?.id) {
           socket.emit("markAsRead", {
             chatId: chatId,
