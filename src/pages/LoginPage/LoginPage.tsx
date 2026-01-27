@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import useAuthToken from "@/lib/hooks/useAuthToken";
 import { updateSocketToken } from "@/lib/api/socket";
+import { getToken } from "firebase/messaging";
+import { messaging } from "@/lib/settingFCM";
 import {
   LoginContainer,
   LoginForm,
@@ -19,11 +21,57 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const { customLogin } = useAuthToken();
 
+  const handlePermission = async () => {
+    try {
+      await Notification.requestPermission();
+      registerServiceWorker();
+      await getDeviceToken();
+    } catch (error) {
+      console.log("!! PERMISSION ERROR: ", error);
+    }
+  };
+
+  // 서비스 워커 실행 함수
+  const registerServiceWorker = () => {
+    navigator.serviceWorker
+      .register("firebase-messaging-sw.js")
+      .then(function (registration) {
+        console.log("Service Worker 등록 성공:", registration);
+      })
+      .catch(function (error) {
+        console.log("Service Worker 등록 실패:", error);
+        alert(`Service Worker 등록 실패:, ${error}`);
+      });
+  };
+
+  async function getDeviceToken() {
+    // 권한이 허용된 후에 토큰을 가져옴
+    await getToken(messaging, {
+      vapidKey:
+        "BI_Wyp2W3KQbrrGTywEZfdew85e11SliE5Y9jkZk_xeBCN8E9WNQ-Sm8dDb6Yf7aov5UKcg6HjSEcq889B8f00k",
+    })
+      .then((currentToken) => {
+        if (currentToken) {
+          // 토큰을 서버로 전송하거나 UI 업데이트
+          console.log("토큰: ", currentToken);
+          localStorage.setItem("chatty_fcmToken", currentToken);
+        } else {
+          console.log("토큰을 가져오지 못했습니다. 권한을 다시 요청하세요.");
+        }
+      })
+      .catch((err) => {
+        alert(err);
+        console.log("토큰을 가져오는 중 에러 발생: ", err);
+      });
+  }
+
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: async (res: any) => {
       console.log(res);
       if (res.success) {
+        handlePermission();
+
         // Access Token을 localStorage에 저장
         if (res.data.accessToken) {
           localStorage.setItem("chatty_accessToken", res.data.accessToken);

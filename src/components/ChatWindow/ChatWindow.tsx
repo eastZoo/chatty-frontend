@@ -86,7 +86,7 @@ const ChatWindow: React.FC = () => {
   const joinedRoomRef = useRef<string | null>(null); // 현재 가입한 소켓 방 추적
   const isInitialLoadRef = useRef(true); // 초기 로드 여부
   const messageLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   ); // 초기 메시지 응답 타임아웃
   const syncOnVisibilityRef = useRef(false); // 탭 복귀/재연결 시 수신 메시지를 교체할지 여부
   const retryGetMessagesRef = useRef(false); // 안전 타이머에서 getMessages 재요청 1회만 하기 위함
@@ -98,8 +98,8 @@ const ChatWindow: React.FC = () => {
     () =>
       ({
         "--keyboard-offset": `${keyboardOffset}px`,
-      } as React.CSSProperties),
-    [keyboardOffset]
+      }) as React.CSSProperties,
+    [keyboardOffset],
   );
 
   /**
@@ -310,13 +310,15 @@ const ChatWindow: React.FC = () => {
       try {
         // selectedChat이 없으면 재시도
         if (!selectedChat?.type && retryCount < maxRetries) {
-          console.log(`markAsRead: selectedChat이 아직 설정되지 않음. 재시도 ${retryCount + 1}/${maxRetries}`);
+          console.log(
+            `markAsRead: selectedChat이 아직 설정되지 않음. 재시도 ${retryCount + 1}/${maxRetries}`,
+          );
           setTimeout(() => markAsRead(retryCount + 1), retryDelay);
           return;
         }
 
         const chatType = selectedChat?.type || "private";
-        
+
         // API 호출로 읽음 상태 업데이트
         await markChatAsRead({
           id: chatId || "",
@@ -378,7 +380,7 @@ const ChatWindow: React.FC = () => {
             markAsRead();
           }
         }, 100);
-        
+
         // 3초 후에도 selectedChat이 설정되지 않으면 강제로 호출
         setTimeout(() => {
           clearInterval(checkSelectedChat);
@@ -394,7 +396,7 @@ const ChatWindow: React.FC = () => {
        * 초기 로드와 추가 로드를 구분하여 처리
        */
       const handlePreviousMessages = (
-        response: PreviousMessagesResponse | Message[]
+        response: PreviousMessagesResponse | Message[],
       ): void => {
         if (messageLoadTimeoutRef.current) {
           clearTimeout(messageLoadTimeoutRef.current);
@@ -415,7 +417,7 @@ const ChatWindow: React.FC = () => {
           "previousMessages 수신:",
           messagesData?.length || 0,
           "개",
-          hasMore ? "(더 있음)" : "(마지막)"
+          hasMore ? "(더 있음)" : "(마지막)",
         );
 
         // 탭 복귀 또는 소켓 재연결 후 동기화: 수신 메시지로 전체 교체
@@ -464,7 +466,7 @@ const ChatWindow: React.FC = () => {
               // 중복 메시지 제거
               const existingIds = new Set(prev.map((msg) => msg.id));
               const newMessages = messagesData.filter(
-                (msg) => msg.id && !existingIds.has(msg.id)
+                (msg) => msg.id && !existingIds.has(msg.id),
               );
               return [...newMessages, ...prev];
             });
@@ -613,11 +615,7 @@ const ChatWindow: React.FC = () => {
 
     // 소켓 재연결 시 방 재입장 + 메시지 재요청 (두 branch에서 공통으로 등록)
     const onReconnect = () => {
-      if (
-        !chatId ||
-        !selectedChat?.type ||
-        joinedRoomRef.current !== chatId
-      ) {
+      if (!chatId || !selectedChat?.type || joinedRoomRef.current !== chatId) {
         return;
       }
       console.log("🔄 소켓 재연결됨. 채팅방 재입장 및 메시지 재요청");
@@ -682,7 +680,10 @@ const ChatWindow: React.FC = () => {
         clearInterval(connectPoll);
         socket.off("connect", onConnect);
         socket.off("connect", onReconnect);
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange,
+        );
         window.removeEventListener("focus", handleWindowFocus);
         if (cleanupChat) cleanupChat();
 
@@ -768,7 +769,8 @@ const ChatWindow: React.FC = () => {
     };
 
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
   }, [chatId, selectedChat?.type]);
 
   /**
@@ -854,7 +856,7 @@ const ChatWindow: React.FC = () => {
    */
   const renderMessageContent = (
     content: string,
-    isOwn: boolean
+    isOwn: boolean,
   ): React.ReactNode[] => {
     return parseCodeBlocks(content).map((part, index) => {
       if (part.type === "code") {
