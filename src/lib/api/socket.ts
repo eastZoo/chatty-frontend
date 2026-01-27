@@ -9,10 +9,13 @@ const socketOptions = {
   autoConnect: false, // 수동으로 연결하도록 변경
   reconnection: true,
   reconnectionDelay: 1000,
-  reconnectionAttempts: 5,
+  reconnectionDelayMax: 5000,
+  reconnectionAttempts: Infinity, // 무한 재시도
   timeout: 20000,
   query: initialToken ? { token: initialToken } : undefined,
   auth: initialToken ? { token: initialToken } : undefined,
+  // 연결이 끊어졌을 때 자동으로 재연결 시도
+  forceNew: false,
 };
 
 // autoConnect 옵션을 true로 하여 애플리케이션 시작 시 연결하도록 합니다.
@@ -36,6 +39,45 @@ socket.on("error", (error) => {
 socket.on("reconnect", (attemptNumber) => {
   console.log("Socket reconnected after", attemptNumber, "attempts");
 });
+
+socket.on("reconnect_error", (error) => {
+  console.error("Socket reconnection error:", error);
+});
+
+socket.on("reconnect_failed", () => {
+  console.error("Socket reconnection failed. Attempting manual reconnect...");
+  // 수동 재연결 시도
+  setTimeout(() => {
+    if (!socket.connected) {
+      console.log("Manual reconnect attempt...");
+      socket.connect();
+    }
+  }, 2000);
+});
+
+// Page Visibility API를 사용하여 탭이 다시 활성화될 때 소켓 재연결
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && !socket.connected) {
+      console.log("Tab became visible. Reconnecting socket...");
+      const token = localStorage.getItem("chatty_accessToken");
+      if (token) {
+        socket.connect();
+      }
+    }
+  });
+
+  // Window focus 이벤트로도 재연결 시도
+  window.addEventListener("focus", () => {
+    if (!socket.connected) {
+      console.log("Window focused. Reconnecting socket...");
+      const token = localStorage.getItem("chatty_accessToken");
+      if (token) {
+        socket.connect();
+      }
+    }
+  });
+}
 
 // 토큰 업데이트 함수
 export const updateSocketToken = (newToken?: string) => {

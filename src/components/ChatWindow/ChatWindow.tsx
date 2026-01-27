@@ -299,6 +299,51 @@ const ChatWindow: React.FC = () => {
     };
 
     /**
+     * 읽음 상태를 업데이트하는 함수
+     * API 호출과 소켓 브로드캐스트를 모두 수행합니다.
+     * 재시도 로직 포함
+     */
+    const markAsRead = async (retryCount = 0): Promise<void> => {
+      const maxRetries = 3;
+      const retryDelay = 500;
+
+      try {
+        // selectedChat이 없으면 재시도
+        if (!selectedChat?.type && retryCount < maxRetries) {
+          console.log(`markAsRead: selectedChat이 아직 설정되지 않음. 재시도 ${retryCount + 1}/${maxRetries}`);
+          setTimeout(() => markAsRead(retryCount + 1), retryDelay);
+          return;
+        }
+
+        const chatType = selectedChat?.type || "private";
+        
+        // API 호출로 읽음 상태 업데이트
+        await markChatAsRead({
+          id: chatId || "",
+          chatType: chatType,
+        });
+
+        // 소켓을 통해 읽음 상태 브로드캐스트
+        if (socket.connected && adminInfo?.id) {
+          socket.emit("markAsRead", {
+            chatId: chatId,
+            chatType: chatType,
+            userId: adminInfo.id,
+          });
+        }
+
+        console.log(`✅ Marked chat ${chatId} as read (type: ${chatType})`);
+      } catch (error) {
+        console.error("❌ Error marking chat as read:", error);
+        // 재시도
+        if (retryCount < maxRetries) {
+          console.log(`markAsRead 재시도 ${retryCount + 1}/${maxRetries}`);
+          setTimeout(() => markAsRead(retryCount + 1), retryDelay);
+        }
+      }
+    };
+
+    /**
      * 채팅방 초기화 함수
      * 소켓 방에 참여하고, 이벤트 리스너를 등록하며, 메시지를 요청합니다.
      * @returns cleanup 함수 (이벤트 리스너 제거용)
@@ -322,33 +367,27 @@ const ChatWindow: React.FC = () => {
         console.log(`Already joined room ${chatId}`);
       }
 
-      /**
-       * 읽음 상태를 업데이트하는 함수
-       * API 호출과 소켓 브로드캐스트를 모두 수행합니다.
-       */
-      const markAsRead = async (): Promise<void> => {
-        try {
-          // API 호출로 읽음 상태 업데이트
-          await markChatAsRead({
-            id: chatId || "",
-            chatType: selectedChat?.type || "",
-          });
-
-          // 소켓을 통해 읽음 상태 브로드캐스트
-          socket.emit("markAsRead", {
-            chatId: chatId,
-            chatType: selectedChat?.type || "private",
-            userId: adminInfo?.id,
-          });
-
-          console.log(`Marked chat ${chatId} as read`);
-        } catch (error) {
-          console.error("Error marking chat as read:", error);
-        }
-      };
-
-      // 채팅방 진입 시 읽음 처리
-      markAsRead();
+      // 채팅방 진입 시 읽음 처리 (selectedChat이 설정된 후에 호출되도록 보장)
+      if (selectedChat?.type) {
+        markAsRead();
+      } else {
+        // selectedChat이 아직 설정되지 않았으면 약간의 지연 후 재시도
+        const checkSelectedChat = setInterval(() => {
+          if (selectedChat?.type) {
+            clearInterval(checkSelectedChat);
+            markAsRead();
+          }
+        }, 100);
+        
+        // 3초 후에도 selectedChat이 설정되지 않으면 강제로 호출
+        setTimeout(() => {
+          clearInterval(checkSelectedChat);
+          if (!selectedChat?.type) {
+            console.warn("selectedChat이 설정되지 않았지만 markAsRead 호출");
+            markAsRead();
+          }
+        }, 3000);
+      }
 
       /**
        * 이전 메시지들을 받아서 상태에 저장하는 핸들러
@@ -581,6 +620,7 @@ const ChatWindow: React.FC = () => {
       ) {
         return;
       }
+      console.log("🔄 소켓 재연결됨. 채팅방 재입장 및 메시지 재요청");
       syncOnVisibilityRef.current = true;
       socket.emit("joinRoom", chatId);
       socket.emit("getMessages", {
@@ -589,7 +629,36 @@ const ChatWindow: React.FC = () => {
         limit: INITIAL_MESSAGE_LIMIT,
         direction: "latest",
       });
+      // 읽음 상태도 다시 업데이트
+      markAsRead();
     };
+
+    // Page Visibility API: 탭이 다시 활성화될 때 소켓 재연결 및 채팅방 재입장
+    const handleVisibilityChange = () => {
+      if (!document.hidden && chatId && selectedChat?.type) {
+        console.log("👁️ 탭이 다시 활성화됨. 소켓 상태 확인 및 재연결");
+        if (!socket.connected) {
+          console.log("소켓이 끊어져 있음. 재연결 시도...");
+          socket.connect();
+        } else if (joinedRoomRef.current !== chatId) {
+          console.log("채팅방에 재입장 필요");
+          onReconnect();
+        }
+      }
+    };
+
+    // Window focus 이벤트도 처리
+    const handleWindowFocus = () => {
+      if (chatId && selectedChat?.type && socket.connected) {
+        console.log("🪟 창이 포커스됨. 채팅방 상태 확인");
+        if (joinedRoomRef.current !== chatId) {
+          onReconnect();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleWindowFocus);
 
     // 소켓이 연결되지 않았으면 연결 대기 (connect 이벤트 + 폴링으로 누락 방지)
     let cleanupChat: (() => void) | undefined;
@@ -613,6 +682,8 @@ const ChatWindow: React.FC = () => {
         clearInterval(connectPoll);
         socket.off("connect", onConnect);
         socket.off("connect", onReconnect);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        window.removeEventListener("focus", handleWindowFocus);
         if (cleanupChat) cleanupChat();
 
         if (chatId && adminInfo?.id) {
@@ -632,6 +703,8 @@ const ChatWindow: React.FC = () => {
     // 최종 cleanup 함수 반환
     return () => {
       socket.off("connect", onReconnect);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleWindowFocus);
       console.log("Cleanup: leaving room", chatId);
 
       // 채팅 초기화 함수의 cleanup 실행
