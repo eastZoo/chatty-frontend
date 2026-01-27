@@ -96,8 +96,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   ];
 
   const { mutateAsync: pushAlarmSend } = useMutation({
-    mutationFn: (data: { chatId: string; content: string; username: string }) =>
-      sendPushAlarm(data),
+    mutationFn: (data: any) =>
+      sendPushAlarm(data as any),
     onSuccess: () => {
       console.log("!! ALARMS");
     },
@@ -495,9 +495,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
         onSubmit={
           activeFeature === "code"
             ? (e) => {
-                e.preventDefault();
-                handleSendCode();
-              }
+              e.preventDefault();
+              handleSendCode();
+            }
             : handleSubmit
         }
       >
@@ -506,10 +506,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
             data-code-textarea
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value)}
-            placeholder={`${
-              languageOptions.find((lang) => lang.value === selectedLanguage)
-                ?.label || "JavaScript"
-            } 코드를 입력하세요...`}
+            placeholder={`${languageOptions.find((lang) => lang.value === selectedLanguage)
+              ?.label || "JavaScript"
+              } 코드를 입력하세요...`}
             onFocus={(e) => triggerFocusAdjust(e.currentTarget)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
