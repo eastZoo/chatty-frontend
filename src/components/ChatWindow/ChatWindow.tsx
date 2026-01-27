@@ -631,27 +631,62 @@ const ChatWindow: React.FC = () => {
       markAsRead();
     };
 
+    // 탭 전환 이벤트 디바운싱
+    let visibilityTimeout: NodeJS.Timeout | null = null;
+    let lastVisibilityAction = 0;
+    const VISIBILITY_DEBOUNCE_MS = 2000; // 2초 디바운스
+
     // Page Visibility API: 탭이 다시 활성화될 때 소켓 재연결 및 채팅방 재입장
     const handleVisibilityChange = () => {
       if (!document.hidden && chatId && selectedChat?.type) {
-        console.log("👁️ 탭이 다시 활성화됨. 소켓 상태 확인 및 재연결");
-        if (!socket.connected) {
-          console.log("소켓이 끊어져 있음. 재연결 시도...");
-          socket.connect();
-        } else if (joinedRoomRef.current !== chatId) {
-          console.log("채팅방에 재입장 필요");
-          onReconnect();
+        const now = Date.now();
+        // 마지막 액션으로부터 2초가 지났는지 확인
+        if (now - lastVisibilityAction < VISIBILITY_DEBOUNCE_MS) {
+          return;
         }
+
+        if (visibilityTimeout) {
+          clearTimeout(visibilityTimeout);
+        }
+
+        visibilityTimeout = setTimeout(() => {
+          console.log("👁️ 탭이 다시 활성화됨. 소켓 상태 확인 및 재연결");
+          if (!socket.connected) {
+            console.log("소켓이 끊어져 있음. 재연결 시도...");
+            socket.connect();
+          } else if (joinedRoomRef.current !== chatId) {
+            console.log("채팅방에 재입장 필요");
+            lastVisibilityAction = Date.now();
+            onReconnect();
+          }
+          visibilityTimeout = null;
+        }, 500); // 500ms 지연
       }
     };
 
-    // Window focus 이벤트도 처리
+    // Window focus 이벤트도 처리 (visibilitychange와 중복 방지)
     const handleWindowFocus = () => {
+      // visibilitychange와 중복 방지
+      if (document.hidden) return;
+
       if (chatId && selectedChat?.type && socket.connected) {
-        console.log("🪟 창이 포커스됨. 채팅방 상태 확인");
-        if (joinedRoomRef.current !== chatId) {
-          onReconnect();
+        const now = Date.now();
+        if (now - lastVisibilityAction < VISIBILITY_DEBOUNCE_MS) {
+          return;
         }
+
+        if (visibilityTimeout) {
+          clearTimeout(visibilityTimeout);
+        }
+
+        visibilityTimeout = setTimeout(() => {
+          console.log("🪟 창이 포커스됨. 채팅방 상태 확인");
+          if (joinedRoomRef.current !== chatId) {
+            lastVisibilityAction = Date.now();
+            onReconnect();
+          }
+          visibilityTimeout = null;
+        }, 500);
       }
     };
 
@@ -678,6 +713,9 @@ const ChatWindow: React.FC = () => {
 
       return () => {
         clearInterval(connectPoll);
+        if (visibilityTimeout) {
+          clearTimeout(visibilityTimeout);
+        }
         socket.off("connect", onConnect);
         socket.off("connect", onReconnect);
         document.removeEventListener(
@@ -703,6 +741,9 @@ const ChatWindow: React.FC = () => {
 
     // 최종 cleanup 함수 반환
     return () => {
+      if (visibilityTimeout) {
+        clearTimeout(visibilityTimeout);
+      }
       socket.off("connect", onReconnect);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleWindowFocus);

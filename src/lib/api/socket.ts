@@ -56,27 +56,65 @@ socket.on("reconnect_failed", () => {
 });
 
 // Page Visibility API를 사용하여 탭이 다시 활성화될 때 소켓 재연결
+// 디바운싱을 통해 너무 자주 재연결하지 않도록 함
 if (typeof document !== "undefined") {
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && !socket.connected) {
-      console.log("Tab became visible. Reconnecting socket...");
-      const token = localStorage.getItem("chatty_accessToken");
-      if (token) {
-        socket.connect();
-      }
-    }
-  });
+  let reconnectTimeout: NodeJS.Timeout | null = null;
+  let lastReconnectAttempt = 0;
+  const RECONNECT_DEBOUNCE_MS = 2000; // 2초 디바운스
 
-  // Window focus 이벤트로도 재연결 시도
-  window.addEventListener("focus", () => {
-    if (!socket.connected) {
-      console.log("Window focused. Reconnecting socket...");
-      const token = localStorage.getItem("chatty_accessToken");
-      if (token) {
-        socket.connect();
+  const handleVisibilityChange = () => {
+    if (!document.hidden && !socket.connected) {
+      const now = Date.now();
+      // 마지막 재연결 시도로부터 2초가 지났는지 확인
+      if (now - lastReconnectAttempt < RECONNECT_DEBOUNCE_MS) {
+        return;
       }
+
+      // 이미 재연결이 진행 중이면 취소
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+
+      reconnectTimeout = setTimeout(() => {
+        const token = localStorage.getItem("chatty_accessToken");
+        if (token && !socket.connected && !socket.active) {
+          console.log("Tab became visible. Reconnecting socket...");
+          lastReconnectAttempt = Date.now();
+          socket.connect();
+        }
+        reconnectTimeout = null;
+      }, 500); // 500ms 지연
     }
-  });
+  };
+
+  const handleWindowFocus = () => {
+    // visibilitychange와 중복 방지
+    if (document.hidden) return;
+
+    if (!socket.connected) {
+      const now = Date.now();
+      if (now - lastReconnectAttempt < RECONNECT_DEBOUNCE_MS) {
+        return;
+      }
+
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+
+      reconnectTimeout = setTimeout(() => {
+        const token = localStorage.getItem("chatty_accessToken");
+        if (token && !socket.connected && !socket.active) {
+          console.log("Window focused. Reconnecting socket...");
+          lastReconnectAttempt = Date.now();
+          socket.connect();
+        }
+        reconnectTimeout = null;
+      }, 500);
+    }
+  };
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  window.addEventListener("focus", handleWindowFocus);
 }
 
 // 토큰 업데이트 함수
