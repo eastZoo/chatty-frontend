@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getMessaging } from "firebase/messaging";
+import { getMessaging, type Messaging } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_API_KEY,
@@ -9,9 +9,18 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_API_APP_ID,
 };
 
-if (!firebaseConfig.apiKey) {
-  throw new Error("Firebase env not loaded");
+// 환경변수가 없어도 앱이 동작하도록 에러를 throw하지 않음
+let messaging: Messaging | null = null;
+
+if (firebaseConfig.apiKey) {
+  try {
+    const app = initializeApp(firebaseConfig);
+    messaging = getMessaging(app);
+  } catch (error) {
+    console.warn("Firebase 초기화 실패:", error);
+  }
+} else {
+  console.warn("Firebase 환경변수가 설정되지 않았습니다. FCM 기능이 비활성화됩니다.");
 }
 
-const app = initializeApp(firebaseConfig);
-export const messaging = getMessaging(app);
+export { messaging };

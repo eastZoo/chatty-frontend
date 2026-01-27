@@ -44,6 +44,12 @@ const LoginPage: React.FC = () => {
   };
 
   const getDeviceToken = async () => {
+    // Firebase messaging이 초기화되지 않은 경우 건너뛰기
+    if (!messaging) {
+      console.warn("Firebase messaging이 초기화되지 않았습니다. FCM 토큰을 가져올 수 없습니다.");
+      return;
+    }
+
     // 권한이 허용된 후에 토큰을 가져옴
     await getToken(messaging, {
       vapidKey:
