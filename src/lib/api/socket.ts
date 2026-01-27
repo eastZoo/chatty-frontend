@@ -55,6 +55,22 @@ socket.on("reconnect_failed", () => {
   }, 2000);
 });
 
+// 서버에서 토큰 재발급 이벤트 수신
+socket.on("token-refreshed", (data: { token: string }) => {
+  console.log("🔄 서버에서 새로운 Access Token 수신");
+  if (data.token) {
+    localStorage.setItem("chatty_accessToken", data.token);
+    updateSocketToken(data.token);
+    console.log("✅ 새로운 Access Token 저장 및 소켓 토큰 업데이트 완료");
+    
+    // 소켓이 연결되어 있지 않으면 재연결 시도
+    if (!socket.connected) {
+      console.log("소켓이 연결되지 않음. 새로운 토큰으로 재연결 시도...");
+      socket.connect();
+    }
+  }
+});
+
 // Page Visibility API를 사용하여 탭이 다시 활성화될 때 소켓 재연결
 // 디바운싱을 통해 너무 자주 재연결하지 않도록 함
 if (typeof document !== "undefined") {
