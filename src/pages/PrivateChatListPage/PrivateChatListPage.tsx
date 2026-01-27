@@ -30,13 +30,31 @@ const PrivateChatListPage: React.FC = () => {
     queryKey: ["privateChats"],
     queryFn: getPrivateChatList,
     enabled: !!adminInfo,
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30000, // 30초간 캐시 유지
+    refetchOnMount: false, // 마운트 시 자동 refetch 비활성화
+    refetchOnWindowFocus: false, // 탭 전환 시 자동 refetch 비활성화
   });
 
-  // 실시간 메시지 이벤트 처리 (캐시만 갱신, invalidate 제거로 깜빡임/로딩 덜어줌)
+  // 실시간 메시지 이벤트 처리 (캐시만 갱신, 불필요한 refetch 최소화)
   useEffect(() => {
     if (!adminInfo?.id) return;
+
+    // refetch 디바운싱을 위한 타이머
+    let refetchTimeout: NodeJS.Timeout | null = null;
+    const REFETCH_DEBOUNCE_MS = 1000; // 1초 디바운스
+
+    const debouncedRefetch = () => {
+      if (refetchTimeout) {
+        clearTimeout(refetchTimeout);
+      }
+      refetchTimeout = setTimeout(() => {
+        queryClient.refetchQueries({ 
+          queryKey: ["privateChats"],
+          type: "active", // 활성 쿼리만 refetch
+        });
+        refetchTimeout = null;
+      }, REFETCH_DEBOUNCE_MS);
+    };
 
     const handleNewMessage = (message: any) => {
       const isOwnMessage = message.sender?.id === adminInfo?.id;
@@ -58,7 +76,10 @@ const PrivateChatListPage: React.FC = () => {
             return chat;
           });
         });
+        // 새 메시지가 있을 때만 디바운스된 refetch
+        debouncedRefetch();
       } else {
+        // 자신의 메시지는 캐시만 업데이트 (refetch 불필요)
         queryClient.setQueryData(["privateChats"], (oldData: any) => {
           if (!oldData) return oldData;
           return oldData.map((chat: any) => {
@@ -75,8 +96,6 @@ const PrivateChatListPage: React.FC = () => {
           });
         });
       }
-      // 백그라운드 리페치만 수행 (캐시는 유지, 로딩 상태로 덮지 않음)
-      queryClient.refetchQueries({ queryKey: ["privateChats"] });
     };
 
     const handleChatListUpdate = (data: any) => {
@@ -89,7 +108,8 @@ const PrivateChatListPage: React.FC = () => {
             );
           });
         }
-        queryClient.refetchQueries({ queryKey: ["privateChats"] });
+        // 읽음 상태 업데이트는 캐시만 업데이트하고 refetch는 디바운스
+        debouncedRefetch();
       }
       if (data.type === "group") {
         queryClient.refetchQueries({ queryKey: ["groupChats"] });
@@ -97,8 +117,8 @@ const PrivateChatListPage: React.FC = () => {
     };
 
     const handleMessageRead = () => {
-      queryClient.refetchQueries({ queryKey: ["privateChats"] });
-
+      // 읽음 이벤트는 디바운스된 refetch만 수행
+      debouncedRefetch();
     };
 
     socket.on("newMessage", handleNewMessage);
@@ -106,6 +126,9 @@ const PrivateChatListPage: React.FC = () => {
     socket.on("messageRead", handleMessageRead);
 
     return () => {
+      if (refetchTimeout) {
+        clearTimeout(refetchTimeout);
+      }
       socket.off("newMessage", handleNewMessage);
       socket.off("chatListUpdate", handleChatListUpdate);
       socket.off("messageRead", handleMessageRead);
