@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+} from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { FiCode, FiImage, FiFile, FiX } from "react-icons/fi";
 import socket from "@/lib/api/socket";
@@ -9,6 +15,8 @@ import CodeBlock from "@/components/CodeBlock/CodeBlock";
 import FileAttachment from "@/components/FileAttachment/FileAttachment";
 import { uploadFile, uploadFileDirect } from "@/lib/api/files";
 import * as S from "./MessageInput.styles";
+import { useMutation } from "@tanstack/react-query";
+import { sendPushAlarm } from "@/lib/api/chat";
 
 interface MessageInputProps {
   chatId?: string;
@@ -49,7 +57,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   // 첨부 파일 상태
   const [codeAttachments, setCodeAttachments] = useState<CodeAttachment[]>([]);
   const [fileAttachments, setFileAttachments] = useState<FileAttachmentData[]>(
-    []
+    [],
   );
   const [showCodeModal, setShowCodeModal] = useState(false);
 
@@ -87,6 +95,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
     { value: "text", label: "Plain Text" },
   ];
 
+  const { mutateAsync: pushAlarmSend } = useMutation({
+    mutationFn: (data: { chatId: string; content: string; username: string }) =>
+      sendPushAlarm(data),
+    onSuccess: () => {
+      console.log("!! ALARMS");
+    },
+    onError: (error) => {
+      console.log("!! SEND ERROR: ", error);
+    },
+  });
+
   // 입력 필드에 대한 ref 생성
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,7 +115,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       ({
         "--keyboard-offset": `${keyboardOffset}px`,
       }) as React.CSSProperties,
-    [keyboardOffset]
+    [keyboardOffset],
   );
 
   // 메시지 전송 후 입력 필드에 포커스를 유지
@@ -130,6 +149,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
         };
 
         console.log("메시지 전송 중:", messageData);
+        pushAlarmSend({
+          chatId: chatId,
+          content: content,
+        });
         socket.emit("sendMessage", messageData);
 
         setContent("");
@@ -153,7 +176,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       fileAttachments,
       selectedChat?.type,
       isSending,
-    ]
+    ],
   );
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,7 +195,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         }, 150);
       }
     },
-    [onInputFocus]
+    [onInputFocus],
   );
 
   const handleTextInputFocus = useCallback(() => {
@@ -191,7 +214,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         // 코드 모드 진입 시 코드 입력창에 포커스
         setTimeout(() => {
           const codeTextArea = document.querySelector(
-            "[data-code-textarea]"
+            "[data-code-textarea]",
           ) as HTMLTextAreaElement;
           if (codeTextArea) {
             codeTextArea.focus();
@@ -199,7 +222,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         }, 100);
       }
     },
-    []
+    [],
   );
 
   // 코드 전송 - 바로 메시지로 전송
@@ -260,14 +283,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
           // 파일 크기 제한 (10MB)
           const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
           const oversizedFiles = Array.from(files).filter(
-            (file) => file.size > MAX_FILE_SIZE
+            (file) => file.size > MAX_FILE_SIZE,
           );
 
           if (oversizedFiles.length > 0) {
             alert(
               `다음 파일들이 너무 큽니다 (10MB 제한):\n${oversizedFiles
                 .map((f) => f.name)
-                .join("\n")}`
+                .join("\n")}`,
             );
             return;
           }
@@ -320,7 +343,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         fileInputRef.current.value = "";
       }
     },
-    []
+    [],
   );
 
   // 첨부 파일 제거 (현재 미사용, 추후 구현 예정)
@@ -335,7 +358,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   // 파일 다운로드 핸들러
   const handleFileDownload = useCallback(async (file: FileAttachmentData) => {
     const shouldDownload = window.confirm(
-      `"${file.originalName}" 파일을 다운로드하시겠습니까?`
+      `"${file.originalName}" 파일을 다운로드하시겠습니까?`,
     );
 
     if (shouldDownload) {

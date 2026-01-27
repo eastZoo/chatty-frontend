@@ -25,7 +25,6 @@ const LoginPage: React.FC = () => {
     try {
       await Notification.requestPermission();
       registerServiceWorker();
-      await getDeviceToken();
     } catch (error) {
       console.log("!! PERMISSION ERROR: ", error);
     }
@@ -44,7 +43,7 @@ const LoginPage: React.FC = () => {
       });
   };
 
-  async function getDeviceToken() {
+  const getDeviceToken = async () => {
     // 권한이 허용된 후에 토큰을 가져옴
     await getToken(messaging, {
       vapidKey:
@@ -63,15 +62,13 @@ const LoginPage: React.FC = () => {
         alert(err);
         console.log("토큰을 가져오는 중 에러 발생: ", err);
       });
-  }
+  };
 
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: async (res: any) => {
       console.log(res);
       if (res.success) {
-        handlePermission();
-
         // Access Token을 localStorage에 저장
         if (res.data.accessToken) {
           localStorage.setItem("chatty_accessToken", res.data.accessToken);
@@ -87,14 +84,28 @@ const LoginPage: React.FC = () => {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username || !password) {
-      toast.error("모든 항목을 입력해주세요.");
-      return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    try {
+      e.preventDefault();
+      if (!username || !password) {
+        toast.error("모든 항목을 입력해주세요.");
+        return;
+      }
+
+      handlePermission();
+
+      await getDeviceToken();
+
+      const credentials: LoginRequest = {
+        username,
+        password,
+        fcmToken: localStorage.getItem("chatty_fcmToken")!,
+      };
+
+      mutation.mutate(credentials);
+    } catch (error) {
+      console.log("!! LOGIN ERROR: ", error);
     }
-    const credentials: LoginRequest = { username, password };
-    mutation.mutate(credentials);
   };
 
   return (

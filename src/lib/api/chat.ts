@@ -35,12 +35,24 @@ export const createChat = async (title?: string): Promise<Chat> => {
 
 export const updateChatTitle = async (
   chatId: string,
-  title: string
+  title: string,
 ): Promise<Chat> => {
   return request<Chat>({
     url: `/chats/${chatId}`,
     method: "PATCH",
     data: { title },
+  });
+};
+
+export const sendPushAlarm = async (datas: {
+  chatId: string;
+  content: string;
+  userId: string;
+}): Promise<any> => {
+  return request<any>({
+    url: `chats/send/push`,
+    method: "POST",
+    data: datas,
   });
 };
 
