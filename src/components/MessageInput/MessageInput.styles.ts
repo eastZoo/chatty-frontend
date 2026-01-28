@@ -6,7 +6,9 @@ export const InputContainer = styled.form`
   background: ${({ theme }) => theme.colors.bgSecondary};
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   padding: 12px 20px;
-  padding-bottom: calc(max(12px, env(safe-area-inset-bottom)) + var(--keyboard-offset, 0px));
+  padding-bottom: calc(
+    max(12px, env(safe-area-inset-bottom)) + var(--keyboard-offset, 0px)
+  );
   box-sizing: border-box;
   width: 100%;
   gap: 12px;
@@ -17,7 +19,7 @@ export const InputContainer = styled.form`
   transition: padding-bottom 0.2s ease;
 `;
 
-export const TextInput = styled.input`
+export const TextInput = styled.textarea`
   flex: 1;
   padding: 12px 16px;
   border: 1px solid ${({ theme }) => theme.colors.border};
@@ -27,10 +29,21 @@ export const TextInput = styled.input`
   color: ${({ theme }) => theme.colors.text};
   box-sizing: border-box;
   line-height: 1.4;
-  max-height: 100px;
-  min-height: 44px;
-  resize: none;
-  /* iOS Safari input zoom 방지 */
+
+  min-height: 30px;
+  max-height: 42px;
+
+  resize: none; /* 사용자가 드래그로 늘리는 것 방지 */
+  overflow-y: auto; /* max-height 초과 시 스크롤 */
+
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE, Edge(구버전) */
+
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+
+  /* iOS Safari zoom 방지 */
   font-size: 16px;
 
   &:focus {
@@ -43,7 +56,6 @@ export const TextInput = styled.input`
     color: ${({ theme }) => theme.colors.textSecondary};
   }
 
-  /* 모바일에서 터치 최적화 */
   -webkit-appearance: none;
   appearance: none;
 `;
@@ -256,8 +268,8 @@ export const TextArea = styled.textarea`
   background: ${({ theme }) => theme.colors.bg};
   color: ${({ theme }) => theme.colors.text};
   font-size: 14px;
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro",
-    monospace;
+  font-family:
+    "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro", monospace;
   min-height: 200px;
   resize: vertical;
   box-sizing: border-box;
@@ -531,8 +543,8 @@ export const CodeTextArea = styled.textarea`
   background: ${({ theme }) => theme.colors.bg};
   color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro",
-    monospace;
+  font-family:
+    "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro", monospace;
   min-height: 44px;
   max-height: 200px;
   resize: vertical;

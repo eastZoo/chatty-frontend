@@ -9,6 +9,7 @@ export interface LoginResponse {
 export interface LoginRequest {
   username: string;
   password: string;
+  fcmToken: string;
 }
 
 export interface RegisterRequest {
@@ -25,7 +26,7 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
 };
 
 export const register = async (
-  data: RegisterRequest
+  data: RegisterRequest,
 ): Promise<ResponseType<any>> => {
   return request<ResponseType<any>>({
     url: "/auth/register",

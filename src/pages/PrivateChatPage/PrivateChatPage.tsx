@@ -38,7 +38,15 @@ const PrivateChatPage: React.FC = () => {
   if (isLoading && !data) {
     return (
       <ChatPageContainer>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", padding: 24 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            padding: 24,
+          }}
+        >
           로딩중...
         </div>
       </ChatPageContainer>
@@ -50,8 +58,12 @@ const PrivateChatPage: React.FC = () => {
       <ChatPageContainer>
         <div style={{ padding: 24, textAlign: "center" }}>
           <p>채팅방을 불러올 수 없습니다.</p>
-          <button type="button" onClick={() => refetch()}>다시 시도</button>
-          <button type="button" onClick={() => navigate("/chat")}>목록으로</button>
+          <button type="button" onClick={() => refetch()}>
+            다시 시도
+          </button>
+          <button type="button" onClick={() => navigate("/chat")}>
+            목록으로
+          </button>
         </div>
       </ChatPageContainer>
     );
