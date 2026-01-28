@@ -47,7 +47,6 @@ export const updateChatTitle = async (
 export const sendPushAlarm = async (datas: {
   chatId: string;
   content: string;
-  userId: string;
 }): Promise<any> => {
   return request<any>({
     url: `chats/send/push`,

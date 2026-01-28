@@ -96,7 +96,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   ];
 
   const { mutateAsync: pushAlarmSend } = useMutation({
-    mutationFn: (data: { chatId: string; content: string; username: string }) =>
+    mutationFn: (data: { chatId: string; content: string }) =>
       sendPushAlarm(data),
     onSuccess: () => {
       console.log("!! ALARMS");
@@ -107,7 +107,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   });
 
   // 입력 필드에 대한 ref 생성
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const keyboardStyle = useMemo(
@@ -150,7 +150,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
         console.log("메시지 전송 중:", messageData);
         pushAlarmSend({
-          chatId: chatId,
+          chatId: chatId!,
           content: content,
         });
         socket.emit("sendMessage", messageData);
@@ -179,9 +179,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
     ],
   );
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setContent(e.target.value);
-  }, []);
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setContent(e.target.value);
+
+      // 🔥 자동 높이 조절
+      const el = e.target;
+      el.style.height = "auto";
+      el.style.height = `${Math.min(el.scrollHeight, 100)}px`;
+    },
+    [],
+  );
 
   const triggerFocusAdjust = useCallback(
     (element?: HTMLElement | null) => {
@@ -528,13 +536,28 @@ const MessageInput: React.FC<MessageInputProps> = ({
         ) : (
           <TextInput
             ref={inputRef}
-            type="text"
             placeholder="메시지를 입력하세요..."
             value={content}
             onChange={handleChange}
             maxLength={1000}
             onFocus={handleTextInputFocus}
             onBlur={handleBlur}
+            rows={1}
+            onKeyDown={(e) => {
+              // 한글 입력(IME) 조합 중이면 아무 것도 안 함
+              if (e.nativeEvent.isComposing) return;
+
+              if (e.key === "Enter") {
+                if (e.shiftKey) {
+                  // ✅ Shift + Enter → 줄바꿈 허용 (기본 동작)
+                  return;
+                } else {
+                  // ✅ Enter → 전송
+                  e.preventDefault(); // 줄바꿈 차단
+                  handleSubmit(e as any);
+                }
+              }
+            }}
           />
         )}
 
