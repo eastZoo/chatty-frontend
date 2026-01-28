@@ -282,20 +282,40 @@ const ChatWindow: React.FC = () => {
    * chatId가 변경될 때마다 실행되며, 소켓 연결 상태를 확인하고 메시지를 불러옵니다.
    */
   useEffect(() => {
-    if (!chatId) return;
+    // chatId와 selectedChat이 모두 있어야 초기화 진행
+    if (!chatId || !selectedChat?.type) {
+      console.log("초기화 대기 중:", { chatId, chatType: selectedChat?.type });
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
 
     /**
      * 소켓 연결 상태를 확인하고 연결되지 않은 경우 연결을 시도합니다.
      * @returns 연결되어 있으면 true, 연결 중이면 false
      */
-    const ensureSocketConnected = (): boolean => {
-      if (!socket.connected) {
+    const ensureSocketConnected = (): Promise<boolean> => {
+      return new Promise((resolve) => {
+        if (socket.connected) {
+          resolve(true);
+          return;
+        }
         console.log("소켓이 연결되지 않음. 연결 시도...");
         socket.connect();
-        return false;
-      }
-      return true;
+        
+        // 소켓 연결 대기 (최대 3초)
+        const checkInterval = setInterval(() => {
+          if (socket.connected) {
+            clearInterval(checkInterval);
+            resolve(true);
+          }
+        }, 100);
+        
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          resolve(socket.connected);
+        }, 3000);
+      });
     };
 
     /**
@@ -350,7 +370,22 @@ const ChatWindow: React.FC = () => {
      * 소켓 방에 참여하고, 이벤트 리스너를 등록하며, 메시지를 요청합니다.
      * @returns cleanup 함수 (이벤트 리스너 제거용)
      */
-    function initializeChat(): (() => void) | undefined {
+    async function initializeChat(): Promise<(() => void) | undefined> {
+      // selectedChat이 없으면 초기화하지 않음
+      if (!selectedChat?.type) {
+        console.error("selectedChat.type이 없어 초기화를 중단합니다.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 소켓 연결 확인 및 대기
+      const isConnected = await ensureSocketConnected();
+      if (!isConnected) {
+        console.error("소켓 연결 실패. 메시지를 가져올 수 없습니다.");
+        setIsLoading(false);
+        return;
+      }
+
       // 1. 소켓 방 참여 처리 (중복 join 방지)
       if (joinedRoomRef.current !== chatId) {
         // 이전 방이 있으면 나가기
@@ -560,15 +595,9 @@ const ChatWindow: React.FC = () => {
       socket.on("chatListUpdate", handleChatListUpdate);
       socket.on("errorMessage", handleErrorMessage);
 
-      // 메시지 요청 전에 파라미터 검증
-      if (!chatId) {
-        console.error("chatId가 없습니다. 메시지를 가져올 수 없습니다.");
-        setIsLoading(false);
-        return;
-      }
-
-      if (!selectedChat?.type) {
-        console.error("chatType이 없습니다. 메시지를 가져올 수 없습니다.");
+      // 메시지 요청 전에 파라미터 재검증 (비동기 처리 후 상태 변경 가능성 대비)
+      if (!chatId || !selectedChat?.type) {
+        console.error("필수 파라미터가 없습니다:", { chatId, chatType: selectedChat?.type });
         setIsLoading(false);
         return;
       }
@@ -576,13 +605,20 @@ const ChatWindow: React.FC = () => {
       // 서버에 초기 메시지 요청 (최신 메시지만)
       console.log("📤 getMessages emit 시작 (초기 로드):", {
         roomId: chatId,
-        chatType: selectedChat?.type,
+        chatType: selectedChat.type,
         limit: INITIAL_MESSAGE_LIMIT,
       });
 
+      // 초기 로드 상태 리셋
+      isInitialLoadRef.current = true;
+      setIsLoading(true);
+      setMessages([]);
+      setHasMoreMessages(true);
+      setCursor(undefined);
+
       socket.emit("getMessages", {
         roomId: chatId,
-        chatType: selectedChat?.type,
+        chatType: selectedChat.type,
         limit: INITIAL_MESSAGE_LIMIT,
         direction: "latest", // 최신 메시지부터
       });
@@ -695,54 +731,56 @@ const ChatWindow: React.FC = () => {
 
     // 소켓이 연결되지 않았으면 연결 대기 (connect 이벤트 + 폴링으로 누락 방지)
     let cleanupChat: (() => void) | undefined;
-    if (!ensureSocketConnected()) {
-      const onConnect = () => {
-        console.log("소켓 연결 완료:", socket.id);
-        if (!cleanupChat) cleanupChat = initializeChat();
+    let connectPoll: NodeJS.Timeout | null = null;
+    let connectHandler: (() => void) | null = null;
+    
+    ensureSocketConnected().then((isConnected) => {
+      if (isConnected) {
+        // 소켓이 이미 연결된 경우 바로 초기화
+        initializeChat().then((cleanup) => {
+          cleanupChat = cleanup;
+        });
+        connectHandler = onReconnect;
         socket.on("connect", onReconnect);
-      };
-      socket.on("connect", onConnect);
-
-      const connectPoll = setInterval(() => {
-        if (socket.connected) {
-          clearInterval(connectPoll);
-          if (!cleanupChat) cleanupChat = initializeChat();
+      } else {
+        // 연결 대기 중
+        const onConnect = async () => {
+          console.log("소켓 연결 완료:", socket.id);
+          if (!cleanupChat) {
+            const cleanup = await initializeChat();
+            cleanupChat = cleanup;
+          }
+          connectHandler = onReconnect;
           socket.on("connect", onReconnect);
-        }
-      }, SOCKET_CONNECT_POLL_MS);
+        };
+        connectHandler = onConnect;
+        socket.on("connect", onConnect);
 
-      return () => {
-        clearInterval(connectPoll);
-        if (visibilityTimeout) {
-          clearTimeout(visibilityTimeout);
-        }
-        socket.off("connect", onConnect);
-        socket.off("connect", onReconnect);
-        document.removeEventListener(
-          "visibilitychange",
-          handleVisibilityChange,
-        );
-        window.removeEventListener("focus", handleWindowFocus);
-        if (cleanupChat) cleanupChat();
-
-        if (chatId && adminInfo?.id) {
-          socket.emit("markAsRead", {
-            chatId: chatId,
-            chatType: selectedChat?.type || "private",
-            userId: adminInfo.id,
-          });
-        }
-      };
-    }
-
-    // 소켓이 이미 연결된 경우 바로 초기화
-    cleanupChat = initializeChat();
-    socket.on("connect", onReconnect);
+        connectPoll = setInterval(async () => {
+          if (socket.connected) {
+            clearInterval(connectPoll!);
+            connectPoll = null;
+            if (!cleanupChat) {
+              const cleanup = await initializeChat();
+              cleanupChat = cleanup;
+            }
+            connectHandler = onReconnect;
+            socket.on("connect", onReconnect);
+          }
+        }, SOCKET_CONNECT_POLL_MS);
+      }
+    });
 
     // 최종 cleanup 함수 반환
     return () => {
+      if (connectPoll) {
+        clearInterval(connectPoll);
+      }
       if (visibilityTimeout) {
         clearTimeout(visibilityTimeout);
+      }
+      if (connectHandler) {
+        socket.off("connect", connectHandler);
       }
       socket.off("connect", onReconnect);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -766,7 +804,6 @@ const ChatWindow: React.FC = () => {
       socket.off("chatListUpdate");
       socket.off("errorMessage");
 
-      // 채팅방을 나갈 때 읽음 상태 업데이트
       if (chatId && adminInfo?.id) {
         socket.emit("markAsRead", {
           chatId: chatId,
@@ -774,17 +811,6 @@ const ChatWindow: React.FC = () => {
           userId: adminInfo.id,
         });
       }
-
-      // 상태 초기화
-      setMessages([]);
-      setIsLoading(true);
-      setIsLoadingMore(false);
-      setHasMoreMessages(true);
-      setCursor(undefined);
-      setIsUserAtBottom(true);
-      setIsReadyToShow(false);
-      isInitialLoadRef.current = true;
-      retryGetMessagesRef.current = false;
     };
   }, [chatId, selectedChat?.type, adminInfo?.id]);
 

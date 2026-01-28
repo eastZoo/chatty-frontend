@@ -25,7 +25,11 @@ const PrivateChatPage: React.FC = () => {
 
   useEffect(() => {
     if (data) {
-      setSelectedChat(data);
+      // selectedChat을 동기적으로 설정하여 ChatWindow가 올바른 데이터로 초기화되도록 보장
+      setSelectedChat({
+        ...data,
+        type: data.type || "private", // type이 없으면 기본값 설정
+      });
     }
   }, [data, setSelectedChat]);
 
@@ -69,6 +73,7 @@ const PrivateChatPage: React.FC = () => {
     );
   }
 
+  // data가 없거나 selectedChat이 설정되지 않았으면 ChatWindow를 렌더링하지 않음
   if (!data) return null;
 
   return (
