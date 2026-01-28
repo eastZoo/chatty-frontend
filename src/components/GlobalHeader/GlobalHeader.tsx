@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { useLocation, useNavigate } from "react-router-dom";
-import { IoIosArrowBack } from "react-icons/io";
+import { useLocation } from "react-router-dom";
 import { FiPlus } from "react-icons/fi";
 import FriendAddModal from "@/components/FriendAddModal/FriendAddModal";
 import { useRecoilValue } from "recoil";
@@ -57,8 +56,6 @@ const IconButton = styled.button`
 
 const GlobalHeader: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-
   const adminInfo = useRecoilValue(adminInfoSelector);
   const [isModalOpen, setModalOpen] = useState(false);
 
@@ -73,17 +70,10 @@ const GlobalHeader: React.FC = () => {
   return (
     <>
       <HeaderContainer>
-        {currentTab == "대화" && (
-          <IconButton onClick={() => navigate(-1)}>
-            <IoIosArrowBack size={20} />
-          </IconButton>
-        )}
         <Title>{currentTab}</Title>
-        {currentTab != "설정" && (
-          <IconButton onClick={() => setModalOpen(true)}>
-            <FiPlus size={20} />
-          </IconButton>
-        )}
+        <IconButton onClick={() => setModalOpen(true)}>
+          <FiPlus size={20} />
+        </IconButton>
       </HeaderContainer>
       {isModalOpen && (
         <FriendAddModal

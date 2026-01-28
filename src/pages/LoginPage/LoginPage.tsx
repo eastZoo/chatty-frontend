@@ -5,8 +5,6 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import useAuthToken from "@/lib/hooks/useAuthToken";
 import { updateSocketToken } from "@/lib/api/socket";
-import { getToken } from "firebase/messaging";
-import { messaging } from "@/lib/settingFCM";
 import {
   LoginContainer,
   LoginForm,
@@ -20,55 +18,6 @@ const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const { customLogin } = useAuthToken();
-
-  const handlePermission = async () => {
-    try {
-      await Notification.requestPermission();
-      registerServiceWorker();
-    } catch (error) {
-      console.log("!! PERMISSION ERROR: ", error);
-    }
-  };
-
-  // 서비스 워커 실행 함수
-  const registerServiceWorker = () => {
-    navigator.serviceWorker
-      .register("firebase-messaging-sw.js")
-      .then(function (registration) {
-        console.log("Service Worker 등록 성공:", registration);
-      })
-      .catch(function (error) {
-        console.log("Service Worker 등록 실패:", error);
-        alert(`Service Worker 등록 실패:, ${error}`);
-      });
-  };
-
-  const getDeviceToken = async () => {
-    // Firebase messaging이 초기화되지 않은 경우 건너뛰기
-    if (!messaging) {
-      console.warn("Firebase messaging이 초기화되지 않았습니다. FCM 토큰을 가져올 수 없습니다.");
-      return;
-    }
-
-    // 권한이 허용된 후에 토큰을 가져옴
-    await getToken(messaging, {
-      vapidKey:
-        "BI_Wyp2W3KQbrrGTywEZfdew85e11SliE5Y9jkZk_xeBCN8E9WNQ-Sm8dDb6Yf7aov5UKcg6HjSEcq889B8f00k",
-    })
-      .then((currentToken) => {
-        if (currentToken) {
-          // 토큰을 서버로 전송하거나 UI 업데이트
-          console.log("토큰: ", currentToken);
-          localStorage.setItem("chatty_fcmToken", currentToken);
-        } else {
-          console.log("토큰을 가져오지 못했습니다. 권한을 다시 요청하세요.");
-        }
-      })
-      .catch((err) => {
-        alert(err);
-        console.log("토큰을 가져오는 중 에러 발생: ", err);
-      });
-  };
 
   const mutation = useMutation({
     mutationFn: login,
@@ -90,28 +39,14 @@ const LoginPage: React.FC = () => {
     },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    try {
-      e.preventDefault();
-      if (!username || !password) {
-        toast.error("모든 항목을 입력해주세요.");
-        return;
-      }
-
-      handlePermission();
-
-      await getDeviceToken();
-
-      const credentials: LoginRequest = {
-        username,
-        password,
-        fcmToken: localStorage.getItem("chatty_fcmToken")!,
-      };
-
-      mutation.mutate(credentials);
-    } catch (error) {
-      console.log("!! LOGIN ERROR: ", error);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username || !password) {
+      toast.error("모든 항목을 입력해주세요.");
+      return;
     }
+    const credentials: LoginRequest = { username, password };
+    mutation.mutate(credentials);
   };
 
   return (

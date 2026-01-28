@@ -11,7 +11,6 @@ import { GlobalStyle } from "@/styles/GlobalStyle";
 import { queryClient } from "@/lib/queryClient";
 import AppRoutes from "@/lib/core/routes/Routes";
 import { ToastContainer } from "react-toastify";
-import "@/lib/settingFCM";
 
 // 테마를 적용하는 내부 컴포넌트
 const AppWithTheme: React.FC = () => {
