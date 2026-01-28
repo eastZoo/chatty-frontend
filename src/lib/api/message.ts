@@ -26,6 +26,7 @@ export interface Message {
     username?: string;
     password?: string;
   };
+  replyTarget?: Message;
   files?: FileData[];
 }
 
@@ -38,7 +39,7 @@ export const getMessages = async (chatId: string): Promise<Message[]> => {
 
 export const sendMessage = async (
   chatId: string,
-  content: string
+  content: string,
 ): Promise<Message> => {
   return request<Message>({
     url: `/chats/${chatId}/messages`,

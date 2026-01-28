@@ -99,6 +99,64 @@ export const MessageHeader = styled.div`
   max-width: 70%;
 `;
 
+export const ReplyMessageLayout = styled.div<{ isOwn?: boolean }>`
+  position: relative;
+  padding: 6px 12px;
+  border-radius: ${({ theme, isOwn }) =>
+    isOwn
+      ? `${theme.radius.lg} ${theme.radius.lg} 4px ${theme.radius.lg}`
+      : `${theme.radius.lg} ${theme.radius.lg} ${theme.radius.lg} 4px`};
+  background: ${({ theme, isOwn }) =>
+    isOwn ? theme.colors.messageOwn : theme.colors.messageOther};
+  color: ${({ theme, isOwn }) =>
+    isOwn ? theme.colors.messageOwnText : theme.colors.messageOtherText};
+  font-size: 16px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  word-break: break-word;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+  max-width: ${({ isOwn }) => (isOwn ? "70%" : "70%")};
+  min-width: 60px;
+  box-sizing: border-box;
+
+  p {
+    margin: 6px;
+  }
+
+  .reply-user,
+  .reply-content {
+    font-size: 12px;
+  }
+
+  .reply-content {
+    color: ${({ isOwn }) => (isOwn ? "#ffffffc8" : "#000000c8")};
+    padding-bottom: 6px;
+    border-bottom: 1px solid
+      ${({ isOwn }) => (isOwn ? "#ffffff4c" : "#00000026")};
+  }
+
+  /* 메시지 말풍선 꼬리 */
+  &::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    border: 8px solid transparent;
+
+    ${({ isOwn, theme }) =>
+      isOwn
+        ? `
+      right: -8px;
+      border-left-color: ${theme.colors.messageOwn};
+    `
+        : `
+      left: -8px;
+      border-right-color: ${theme.colors.messageOther};
+    `}
+  }
+`;
+
 export const SenderName = styled.span`
   font-weight: 600;
   font-size: 14px;
@@ -147,4 +205,32 @@ export const EmptyChatText = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0;
   line-height: 1.5;
+`;
+
+export const ReplyChatContainer = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: start;
+
+  padding: 6px 12px 6px 12px;
+`;
+
+export const ReplayBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  p {
+    margin: 0px;
+  }
+
+  .title-reply {
+    color: #5d5c5cff;
+  }
+
+  .content-reply {
+    color: #a3a3a3;
+  }
 `;

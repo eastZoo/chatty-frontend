@@ -27,6 +27,7 @@ import { markChatAsRead } from "@/lib/api/chat";
 import { formatTimestamp } from "@/utils/dateUtils";
 import { parseCodeBlocks } from "@/utils/messageUtils";
 import { downloadFile } from "@/utils/fileUtils";
+import { IoIosClose } from "react-icons/io";
 import {
   ChatWindowContainer,
   MessagesContainer,
@@ -38,6 +39,9 @@ import {
   EmptyChatContainer,
   EmptyChatIcon,
   EmptyChatText,
+  ReplyChatContainer,
+  ReplayBox,
+  ReplyMessageLayout,
 } from "./ChatWindow.styles";
 
 // 상수 정의
@@ -78,6 +82,12 @@ const ChatWindow: React.FC = () => {
   const [cursor, setCursor] = useState<string | undefined>(undefined); // 페이지네이션 커서
   const [isReadyToShow, setIsReadyToShow] = useState(false); // 초기 로드 완료 후 표시 준비 여부
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [replyTarget, setReplyTarget] = useState<{
+    messageId: string;
+    content: string;
+    senderId: string;
+    senderName: string;
+  } | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null); // 메시지 끝 지점 참조 (자동 스크롤용)
@@ -302,7 +312,7 @@ const ChatWindow: React.FC = () => {
         }
         console.log("소켓이 연결되지 않음. 연결 시도...");
         socket.connect();
-        
+
         // 소켓 연결 대기 (최대 3초)
         const checkInterval = setInterval(() => {
           if (socket.connected) {
@@ -310,7 +320,7 @@ const ChatWindow: React.FC = () => {
             resolve(true);
           }
         }, 100);
-        
+
         setTimeout(() => {
           clearInterval(checkInterval);
           resolve(socket.connected);
@@ -597,7 +607,10 @@ const ChatWindow: React.FC = () => {
 
       // 메시지 요청 전에 파라미터 재검증 (비동기 처리 후 상태 변경 가능성 대비)
       if (!chatId || !selectedChat?.type) {
-        console.error("필수 파라미터가 없습니다:", { chatId, chatType: selectedChat?.type });
+        console.error("필수 파라미터가 없습니다:", {
+          chatId,
+          chatType: selectedChat?.type,
+        });
         setIsLoading(false);
         return;
       }
@@ -733,7 +746,7 @@ const ChatWindow: React.FC = () => {
     let cleanupChat: (() => void) | undefined;
     let connectPoll: NodeJS.Timeout | null = null;
     let connectHandler: (() => void) | null = null;
-    
+
     ensureSocketConnected().then((isConnected) => {
       if (isConnected) {
         // 소켓이 이미 연결된 경우 바로 초기화
@@ -890,6 +903,15 @@ const ChatWindow: React.FC = () => {
     setKeyboardOffset(0);
   }, []);
 
+  const handleReplyMessage = (message: any) => {
+    setReplyTarget({
+      messageId: message.id,
+      content: message.content,
+      senderId: message.sender.id,
+      senderName: message.sender.username,
+    });
+  };
+
   if (!selectedChat) {
     return (
       <ChatWindowContainer>
@@ -1032,7 +1054,11 @@ const ChatWindow: React.FC = () => {
             const isOwn = msg.sender?.id === currentUserId;
 
             return (
-              <MessageItem key={msg.id} isOwn={isOwn}>
+              <MessageItem
+                key={msg.id}
+                isOwn={isOwn}
+                onDoubleClick={() => handleReplyMessage(msg)}
+              >
                 {/* 송신자가 아닌 경우 발신자 이름 표시 */}
                 {!isOwn && (
                   <MessageHeader>
@@ -1041,9 +1067,19 @@ const ChatWindow: React.FC = () => {
                 )}
 
                 {/* 메시지 내용 렌더링 (코드 블록 포함) */}
-                {msg.content &&
+                {msg.replyTarget ? (
+                  <ReplyMessageLayout isOwn={isOwn}>
+                    <p className="reply-user">
+                      {msg.replyTarget.sender?.username}님에게 답장
+                    </p>
+                    <p className="reply-content">{msg.replyTarget.content}</p>
+                    <p className="send-content">{msg.content}</p>
+                  </ReplyMessageLayout>
+                ) : (
+                  msg.content &&
                   msg.content.trim() &&
-                  renderMessageContent(msg.content, isOwn)}
+                  renderMessageContent(msg.content, isOwn)
+                )}
 
                 {/* 파일 첨부 렌더링 */}
                 {msg.files &&
@@ -1087,9 +1123,22 @@ const ChatWindow: React.FC = () => {
         </>
       </MessagesContainer>
 
+      {replyTarget && (
+        <ReplyChatContainer>
+          <ReplayBox>
+            <p className="title-reply">
+              {replyTarget.senderName} 님에게 답장하기
+            </p>
+            <p className="content-reply">{replyTarget.content}</p>
+          </ReplayBox>
+          <IoIosClose size={30} onClick={() => setReplyTarget(null)} />
+        </ReplyChatContainer>
+      )}
       {/* 메시지 입력 컴포넌트 */}
       <MessageInput
         chatId={chatId}
+        replyTargetId={replyTarget?.messageId}
+        setReplyTarget={setReplyTarget}
         keyboardOffset={keyboardOffset}
         onInputFocus={handleInputFocus}
         onInputBlur={handleInputBlur}

@@ -20,6 +20,15 @@ import { sendPushAlarm } from "@/lib/api/chat";
 
 interface MessageInputProps {
   chatId?: string;
+  replyTargetId?: string;
+  setReplyTarget: React.Dispatch<
+    React.SetStateAction<{
+      messageId: string;
+      content: string;
+      senderId: string;
+      senderName: string;
+    } | null>
+  >;
   keyboardOffset?: number;
   onInputFocus?: () => void;
   onInputBlur?: () => void;
@@ -45,6 +54,8 @@ interface FileAttachmentData {
 
 const MessageInput: React.FC<MessageInputProps> = ({
   chatId,
+  replyTargetId,
+  setReplyTarget,
   keyboardOffset = 0,
   onInputFocus,
   onInputBlur,
@@ -95,6 +106,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     { value: "text", label: "Plain Text" },
   ];
 
+  // 메세지 보내자마자 푸시 알람 전송
   const { mutateAsync: pushAlarmSend } = useMutation({
     mutationFn: (data: { chatId: string; content: string }) =>
       sendPushAlarm(data),
@@ -136,6 +148,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           userId: adminInfo.id,
           username: adminInfo.username,
           chatType: selectedChat?.type,
+          replyTargetId: replyTargetId,
           // 파일 첨부가 있을 때 fileIds 전송
           fileIds:
             fileAttachments.length > 0
@@ -158,6 +171,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         setContent("");
         setCodeAttachments([]);
         setFileAttachments([]);
+        setReplyTarget(null);
 
         // 메시지 전송 후 입력 필드에 다시 포커스 설정
         if (inputRef.current) {
