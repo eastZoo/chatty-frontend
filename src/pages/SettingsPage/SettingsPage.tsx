@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { useRecoilValue } from "recoil";
@@ -68,6 +68,18 @@ const SettingItem = styled.li`
   }
 `;
 
+const SettingAlramsToggle = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  .setting-text {
+    text-align: end;
+  }
+`;
+
 const SettingItemText = styled.span`
   flex: 1;
   font-size: 16px;
@@ -106,6 +118,7 @@ const Select = styled.select`
 `;
 
 const SettingsPage: React.FC = () => {
+  const [alarmSetting, setAlarmSetting] = useState<boolean>(false);
   const { customLogout } = useAuthToken();
   const navigate = useNavigate();
   const user = useRecoilValue(adminInfoSelector);
@@ -130,6 +143,16 @@ const SettingsPage: React.FC = () => {
       toast.error(err?.message || "설정 저장에 실패했습니다.");
     },
   });
+
+  const handleAlarmSetting = () => {
+    setAlarmSetting(!alarmSetting);
+
+    if (localStorage.getItem("alarm_sounds") === "true") {
+      localStorage.setItem("alarm_sounds", "false");
+    } else {
+      localStorage.setItem("alarm_sounds", "true");
+    }
+  };
 
   const currentMinutes = chatAutoDeleteData?.data?.minutes ?? 0;
 
@@ -178,8 +201,13 @@ const SettingsPage: React.FC = () => {
 
       <SectionTitle>알림</SectionTitle>
       <SettingList>
-        <SettingItem onClick={() => console.log("알림 설정 페이지 이동")}>
-          <SettingItemText>알림 설정</SettingItemText>
+        <SettingItem onClick={() => handleAlarmSetting()}>
+          <SettingAlramsToggle>
+            <SettingItemText>알림 설정</SettingItemText>
+            <SettingItemText className="setting-text">
+              {alarmSetting ? "끄기" : "켜기"}
+            </SettingItemText>
+          </SettingAlramsToggle>
         </SettingItem>
       </SettingList>
       {/* 추후 다른 카테고리 추가 가능 */}

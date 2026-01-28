@@ -51,7 +51,9 @@ const MainLayout: React.FC = () => {
 
   return (
     <LayoutContainer>
-      <TabNotificationHandler />
+      {localStorage.getItem("alarm_sounds") === "true" && (
+        <TabNotificationHandler />
+      )}
       <GlobalHeader />
       <ContentContainer hideNavbar={hideNavbar}>
         <Outlet />
