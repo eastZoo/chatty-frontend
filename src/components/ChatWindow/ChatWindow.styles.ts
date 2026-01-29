@@ -258,7 +258,5 @@ export const ImageOpenLayout = styled.div`
     object-fit: contain;
 
     border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    background: #000;
   }
 `;

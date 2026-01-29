@@ -44,6 +44,7 @@ import {
   ReplyMessageLayout,
   ImageOpenLayout,
 } from "./ChatWindow.styles";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 // 상수 정의
 const INITIAL_MESSAGE_LIMIT = 20; // 초기 로드 시 가져올 메시지 수
@@ -1106,7 +1107,6 @@ const ChatWindow: React.FC = () => {
                       isOwn={isOwn}
                       onDownload={handleFileDownload}
                       onClick={() => {
-                        console.log("!! FILE: ", file.mimetype);
                         if (file.mimetype.includes("image")) {
                           setIsImgOpen(!isImgOpen);
                           setIsImgUrl(file.id);
@@ -1159,8 +1159,28 @@ const ChatWindow: React.FC = () => {
         onInputBlur={handleInputBlur}
       />
       {isImgOpen && (
-        <ImageOpenLayout onClick={() => setIsImgOpen(!isImgOpen)}>
-          <img src={`${import.meta.env.VITE_API_BASE_URL}/files/${isImgUrl}`} />
+        <ImageOpenLayout
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsImgOpen(false);
+            }
+          }}
+        >
+          <TransformWrapper
+            doubleClick={{ mode: "toggle" }}
+            wheel={{ disabled: true }}
+            pinch={{ disabled: true }}
+            maxScale={3}
+            minScale={1}
+            panning={{ velocityDisabled: true }}
+          >
+            <TransformComponent>
+              <img
+                src={`${import.meta.env.VITE_API_BASE_URL}/files/${isImgUrl}`}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </TransformComponent>
+          </TransformWrapper>
         </ImageOpenLayout>
       )}
     </ChatWindowContainer>
