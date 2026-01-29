@@ -903,6 +903,9 @@ const ChatWindow: React.FC = () => {
     setKeyboardOffset(0);
   }, []);
 
+  /**
+   * 메세지 답장 상태 함수
+   */
   const handleReplyMessage = (message: any) => {
     setReplyTarget({
       messageId: message.id,
@@ -1067,6 +1070,7 @@ const ChatWindow: React.FC = () => {
                 )}
 
                 {/* 메시지 내용 렌더링 (코드 블록 포함) */}
+                {/** 메시지 답장 내용이 있는 경우 */}
                 {msg.replyTarget ? (
                   <ReplyMessageLayout isOwn={isOwn}>
                     <p className="reply-user">
@@ -1076,6 +1080,7 @@ const ChatWindow: React.FC = () => {
                     <p className="send-content">{msg.content}</p>
                   </ReplyMessageLayout>
                 ) : (
+                  /** 메시지 답장 내용이 없는 경우 */
                   msg.content &&
                   msg.content.trim() &&
                   renderMessageContent(msg.content, isOwn)

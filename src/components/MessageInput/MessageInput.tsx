@@ -189,6 +189,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       codeAttachments,
       fileAttachments,
       selectedChat?.type,
+      replyTargetId,
       isSending,
     ],
   );
@@ -431,7 +432,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, []);
+  }, [replyTargetId]);
 
   const hasAttachments =
     codeAttachments.length > 0 || fileAttachments.length > 0;
