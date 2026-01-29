@@ -234,3 +234,31 @@ export const ReplayBox = styled.div`
     color: #a3a3a3;
   }
 `;
+
+export const ImageOpenLayout = styled.div`
+  position: absolute;
+  inset: 0; /* top, left, right, bottom: 0 */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+
+  padding: 24px;
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+
+    width: auto;
+    height: auto;
+
+    object-fit: contain;
+
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    background: #000;
+  }
+`;

@@ -42,6 +42,7 @@ import {
   ReplyChatContainer,
   ReplayBox,
   ReplyMessageLayout,
+  ImageOpenLayout,
 } from "./ChatWindow.styles";
 
 // 상수 정의
@@ -87,7 +88,9 @@ const ChatWindow: React.FC = () => {
     content: string;
     senderId: string;
     senderName: string;
-  } | null>(null);
+  } | null>(null); // 답장 메세지 상태
+  const [isImgOpen, setIsImgOpen] = useState<boolean>(false); /// 이미지 파일 확대 모달
+  const [isImgUrl, setIsImgUrl] = useState<string | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null); // 메시지 끝 지점 참조 (자동 스크롤용)
@@ -1102,6 +1105,13 @@ const ChatWindow: React.FC = () => {
                       }}
                       isOwn={isOwn}
                       onDownload={handleFileDownload}
+                      onClick={() => {
+                        console.log("!! FILE: ", file.mimetype);
+                        if (file.mimetype.includes("image")) {
+                          setIsImgOpen(!isImgOpen);
+                          setIsImgUrl(file.id);
+                        }
+                      }}
                     />
                   ))}
 
@@ -1148,6 +1158,11 @@ const ChatWindow: React.FC = () => {
         onInputFocus={handleInputFocus}
         onInputBlur={handleInputBlur}
       />
+      {isImgOpen && (
+        <ImageOpenLayout onClick={() => setIsImgOpen(!isImgOpen)}>
+          <img src={`${import.meta.env.VITE_API_BASE_URL}/files/${isImgUrl}`} />
+        </ImageOpenLayout>
+      )}
     </ChatWindowContainer>
   );
 };
