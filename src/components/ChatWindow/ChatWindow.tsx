@@ -104,6 +104,7 @@ const ChatWindow: React.FC = () => {
   ); // 초기 메시지 응답 타임아웃
   const syncOnVisibilityRef = useRef(false); // 탭 복귀/재연결 시 수신 메시지를 교체할지 여부
   const retryGetMessagesRef = useRef(false); // 안전 타이머에서 getMessages 재요청 1회만 하기 위함
+  const moveReplyMessageRef = useRef<Record<string, HTMLDivElement | null>>({}); // 답장했던 메세지로 이동하는 Ref
 
   // 메모이제이션된 값들
   const chatId = useMemo(() => selectedChat?.id, [selectedChat?.id]);
@@ -889,6 +890,19 @@ const ChatWindow: React.FC = () => {
   }, [chatId, selectedChat?.type, isLoading, isReadyToShow]);
 
   /**
+   * 답장한 메세지 클릭시 이동하는 함수
+   */
+  const scrollToMessage = (messageId: string) => {
+    const el = moveReplyMessageRef.current[messageId];
+    if (!el || !messagesContainerRef.current) return;
+
+    el.scrollIntoView({
+      behavior: "smooth",
+      block: "center", // 메시지를 화면 중앙으로
+    });
+  };
+
+  /**
    * 채팅방이 선택되지 않은 경우 빈 상태 화면 표시
    */
   const handleInputFocus = useCallback(() => {
@@ -1060,11 +1074,18 @@ const ChatWindow: React.FC = () => {
           {messages.map((msg: Message) => {
             const isOwn = msg.sender?.id === currentUserId;
 
+            console.log("!! msg: ", msg);
+
             return (
               <MessageItem
                 key={msg.id}
                 isOwn={isOwn}
                 onDoubleClick={() => handleReplyMessage(msg)}
+                ref={(el) => {
+                  if (el) {
+                    moveReplyMessageRef.current[msg.id!] = el;
+                  }
+                }}
               >
                 {/* 송신자가 아닌 경우 발신자 이름 표시 */}
                 {!isOwn && (
@@ -1076,7 +1097,10 @@ const ChatWindow: React.FC = () => {
                 {/* 메시지 내용 렌더링 (코드 블록 포함) */}
                 {/** 메시지 답장 내용이 있는 경우 */}
                 {msg.replyTarget ? (
-                  <ReplyMessageLayout isOwn={isOwn}>
+                  <ReplyMessageLayout
+                    isOwn={isOwn}
+                    onClick={() => scrollToMessage(msg.replyTarget!.id!)}
+                  >
                     <p className="reply-user">
                       {msg.replyTarget.sender?.username}님에게 답장
                     </p>
