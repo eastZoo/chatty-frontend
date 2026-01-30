@@ -1074,8 +1074,6 @@ const ChatWindow: React.FC = () => {
           {messages.map((msg: Message) => {
             const isOwn = msg.sender?.id === currentUserId;
 
-            console.log("!! msg: ", msg);
-
             return (
               <MessageItem
                 key={msg.id}
