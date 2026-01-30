@@ -206,6 +206,47 @@ const MessageInput: React.FC<MessageInputProps> = ({
     [],
   );
 
+  /**
+   * 텍스트 아리아에 이미지 바로 붙혀넣는 함수
+   */
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.kind === "file" && item.type.includes("image")) {
+        e.preventDefault();
+
+        const file = item.getAsFile();
+        if (!file) return;
+
+        try {
+          let uploadedFile;
+          try {
+            uploadedFile = await uploadFile(file);
+          } catch {
+            uploadedFile = await uploadFileDirect(file);
+          }
+
+          setFileAttachments([
+            {
+              id: uploadedFile.id,
+              originalName: uploadedFile.originalName,
+              filename: uploadedFile.filename,
+              size: uploadedFile.size,
+              mimetype: uploadedFile.mimetype,
+              url: uploadedFile.url,
+              uploadedBy: uploadedFile.uploadedBy,
+            },
+          ]);
+        } catch (err) {
+          console.error("붙여넣기 이미지 업로드 실패", err);
+        }
+      }
+    }
+  };
+
   const triggerFocusAdjust = useCallback(
     (element?: HTMLElement | null) => {
       onInputFocus?.();
@@ -558,6 +599,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
             onFocus={handleTextInputFocus}
             onBlur={handleBlur}
             rows={1}
+            onPaste={handlePaste}
             onKeyDown={(e) => {
               // 한글 입력(IME) 조합 중이면 아무 것도 안 함
               if (e.nativeEvent.isComposing) return;
@@ -569,7 +611,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 } else {
                   // ✅ Enter → 전송
                   e.preventDefault(); // 줄바꿈 차단
-                  handleSubmit(e as any);
+                  handleSubmit(e);
                 }
               }
             }}
