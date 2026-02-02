@@ -993,9 +993,11 @@ const ChatWindow: React.FC = () => {
             </MessageBubble>
           );
         } else {
-          <MessageBubble key={`text-${index}`} isOwn={isOwn}>
-            {part.content}
-          </MessageBubble>;
+          return (
+            <MessageBubble key={`text-${index}`} isOwn={isOwn}>
+              {part.content}
+            </MessageBubble>
+          );
         }
       }
     });
