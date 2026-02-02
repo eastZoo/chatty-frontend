@@ -989,7 +989,7 @@ const ChatWindow: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  color: "#4da3ff",
+                  color: "#FFFFFF",
                   textDecoration: "underline",
                   wordBreak: "break-all",
                 }}
