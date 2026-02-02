@@ -979,13 +979,20 @@ const ChatWindow: React.FC = () => {
           />
         );
       } else {
-        if (part.content.startsWith("http")) {
+        const urlRegex = /(https?:\/\/[^\s]+)/;
+
+        if (urlRegex.test(part.content)) {
           return (
             <MessageBubble key={`text-${index}`} isOwn={isOwn}>
               <a
                 href={part.content}
                 target="_blank"
                 rel="noopener noreferrer"
+                style={{
+                  color: "#4da3ff",
+                  textDecoration: "underline",
+                  wordBreak: "break-all",
+                }}
                 onClick={(e) => e.stopPropagation()}
               >
                 {part.content}
