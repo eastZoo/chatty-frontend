@@ -979,11 +979,24 @@ const ChatWindow: React.FC = () => {
           />
         );
       } else {
-        return (
+        if (part.content.startsWith("http")) {
+          return (
+            <MessageBubble key={`text-${index}`} isOwn={isOwn}>
+              <a
+                href={part.content}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {part.content}
+              </a>
+            </MessageBubble>
+          );
+        } else {
           <MessageBubble key={`text-${index}`} isOwn={isOwn}>
             {part.content}
-          </MessageBubble>
-        );
+          </MessageBubble>;
+        }
       }
     });
   };
