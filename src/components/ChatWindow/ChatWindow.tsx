@@ -573,6 +573,17 @@ const ChatWindow: React.FC = () => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 100);
         }
+
+        if (
+          message.sender?.id !== currentUserId &&
+          chatId &&
+          socket.connected
+        ) {
+          socket.emit("markAsRead", {
+            chatId,
+            chatType: selectedChat.type,
+          });
+        }
       };
 
       /**
@@ -609,6 +620,22 @@ const ChatWindow: React.FC = () => {
       socket.on("newMessage", handleNewMessage);
       socket.on("chatListUpdate", handleChatListUpdate);
       socket.on("errorMessage", handleErrorMessage);
+      socket.on("messagesRead", ({ chatId: readChatId, userId }) => {
+        if (readChatId !== chatId) return; // ✅ 다른 채팅방 이벤트 무시
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.sender?.id === currentUserId
+              ? {
+                  ...msg,
+                  readByUserIds: Array.from(
+                    new Set([...(msg.readByUserIds ?? []), userId]),
+                  ),
+                }
+              : msg,
+          ),
+        );
+      });
 
       // 메시지 요청 전에 파라미터 재검증 (비동기 처리 후 상태 변경 가능성 대비)
       if (!chatId || !selectedChat?.type) {
@@ -664,6 +691,7 @@ const ChatWindow: React.FC = () => {
         socket.off("newMessage", handleNewMessage);
         socket.off("chatListUpdate", handleChatListUpdate);
         socket.off("errorMessage", handleErrorMessage);
+        socket.off("messagesRead");
       };
     }
 
@@ -933,6 +961,13 @@ const ChatWindow: React.FC = () => {
     });
   };
 
+  const isReadByOther = (msg: Message, myId: string) => {
+    if (!msg.readByUserIds || msg.readByUserIds.length === 0) return false;
+
+    // 내가 보낸 메시지를, 다른 누군가가 읽었는지
+    return msg.readByUserIds.some((uid) => uid !== myId);
+  };
+
   if (!selectedChat) {
     return (
       <ChatWindowContainer>
@@ -1162,7 +1197,9 @@ const ChatWindow: React.FC = () => {
                 {/* 송신자 메시지: 상태 표시 */}
                 {isOwn && (
                   <MessageStatus
-                    status="sent"
+                    status={
+                      isReadByOther(msg, currentUserId!) ? "read" : "sent"
+                    }
                     timestamp={formatTimestamp(msg.createdAt || "")}
                   />
                 )}

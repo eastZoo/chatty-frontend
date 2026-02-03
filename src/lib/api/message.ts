@@ -27,6 +27,8 @@ export interface Message {
     password?: string;
   };
   replyTarget?: Message;
+  readByUserIds?: string[];
+  isRead?: boolean;
   files?: FileData[];
 }
 
