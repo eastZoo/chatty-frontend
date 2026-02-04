@@ -13,8 +13,10 @@ import {
   ChatItemContent,
   ChatItemName,
   ChatItemLastMessage,
+  ChatRightContentBox,
 } from "./PrivateChatListPage.styles";
 import UnreadBadge from "@/components/UnreadBadge/UnreadBadge";
+import { formatTimestamp } from "@/utils/dateUtils";
 
 const PrivateChatListPage: React.FC = () => {
   const adminInfo = useRecoilValue(adminInfoSelector);
@@ -48,7 +50,7 @@ const PrivateChatListPage: React.FC = () => {
         clearTimeout(refetchTimeout);
       }
       refetchTimeout = setTimeout(() => {
-        queryClient.refetchQueries({ 
+        queryClient.refetchQueries({
           queryKey: ["privateChats"],
           type: "active", // 활성 쿼리만 refetch
         });
@@ -66,6 +68,7 @@ const PrivateChatListPage: React.FC = () => {
             const isMessageForThisChat =
               message.privateChat?.id === chat.id ||
               message.chat?.id === chat.id;
+
             if (isMessageForThisChat) {
               return {
                 ...chat,
@@ -104,7 +107,7 @@ const PrivateChatListPage: React.FC = () => {
           queryClient.setQueryData(["privateChats"], (oldData: any) => {
             if (!oldData) return oldData;
             return oldData.map((chat: any) =>
-              chat.id === data.chatId ? { ...chat, unreadCount: 0 } : chat
+              chat.id === data.chatId ? { ...chat, unreadCount: 0 } : chat,
             );
           });
         }
@@ -156,10 +159,13 @@ const PrivateChatListPage: React.FC = () => {
         chats.map((chat: any) => {
           const friend = chat.otherUser;
           if (!friend) return null;
-          let lastMessage = chat.lastMessage || "";
+          let lastMessage = chat.isFilesExist
+            ? "파일을 전송하였습니다."
+            : chat.lastMessage;
           if (lastMessage.length > 20) {
             lastMessage = lastMessage.slice(0, 20) + "...";
           }
+
           return (
             <ChatItem
               key={chat.id}
@@ -172,7 +178,10 @@ const PrivateChatListPage: React.FC = () => {
                 <ChatItemName>{friend.username ?? ""}</ChatItemName>
                 <ChatItemLastMessage>{lastMessage}</ChatItemLastMessage>
               </ChatItemContent>
-              <UnreadBadge count={chat.unreadCount} />
+              <ChatRightContentBox>
+                <UnreadBadge count={chat.unreadCount} />
+                <p>{formatTimestamp(chat.updatedAt)}</p>
+              </ChatRightContentBox>
             </ChatItem>
           );
         })

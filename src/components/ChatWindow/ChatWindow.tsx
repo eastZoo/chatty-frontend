@@ -90,8 +90,9 @@ const ChatWindow: React.FC = () => {
     senderId: string;
     senderName: string;
   } | null>(null); // 답장 메세지 상태
-  const [isImgOpen, setIsImgOpen] = useState<boolean>(false); /// 이미지 파일 확대 모달
+  const [isImgOpen, setIsImgOpen] = useState<boolean>(false); // 이미지 파일 확대 모달
   const [isImgUrl, setIsImgUrl] = useState<string | null>(null);
+  const [activeMessageId, setActiveMessageId] = useState<string | null>(null); // 스와이프한 메세지 id 상태 관리
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null); // 메시지 끝 지점 참조 (자동 스크롤용)
@@ -105,6 +106,7 @@ const ChatWindow: React.FC = () => {
   const syncOnVisibilityRef = useRef(false); // 탭 복귀/재연결 시 수신 메시지를 교체할지 여부
   const retryGetMessagesRef = useRef(false); // 안전 타이머에서 getMessages 재요청 1회만 하기 위함
   const moveReplyMessageRef = useRef<Record<string, HTMLDivElement | null>>({}); // 답장했던 메세지로 이동하는 Ref
+  const swipeStartX = useRef(0); // 메세지 스와이프하는 동작
 
   // 메모이제이션된 값들
   const chatId = useMemo(() => selectedChat?.id, [selectedChat?.id]);
@@ -1141,6 +1143,36 @@ const ChatWindow: React.FC = () => {
                     moveReplyMessageRef.current[msg.id!] = el;
                   }
                 }}
+                onPointerEnter={(e) => {
+                  if (e.pointerType === "mouse") {
+                    setActiveMessageId(msg.id!);
+                  }
+                }}
+                onPointerLeave={(e) => {
+                  if (e.pointerType === "mouse") {
+                    setActiveMessageId(null);
+                  }
+                }}
+                onPointerDown={(e) => {
+                  if (e.pointerType === "touch") {
+                    swipeStartX.current = e.clientX;
+                  }
+                }}
+                onPointerMove={(e) => {
+                  if (e.pointerType !== "touch") return;
+
+                  const deltaX = swipeStartX.current - e.clientX;
+
+                  if (deltaX > 30) {
+                    setActiveMessageId(msg.id!);
+                  }
+                }}
+                onPointerUp={() => {
+                  setActiveMessageId(null);
+                }}
+                onPointerCancel={() => {
+                  setActiveMessageId(null);
+                }}
               >
                 {/* 송신자가 아닌 경우 발신자 이름 표시 */}
                 {!isOwn && (
@@ -1200,12 +1232,11 @@ const ChatWindow: React.FC = () => {
                     status={
                       isReadByOther(msg, currentUserId!) ? "read" : "sent"
                     }
-                    timestamp={formatTimestamp(msg.createdAt || "")}
+                    // timestamp={formatTimestamp(msg.createdAt || "")}
                   />
                 )}
 
-                {/* 수신자 메시지: 타임스탬프 표시 */}
-                {!isOwn && (
+                {activeMessageId === msg.id && (
                   <Timestamp isOwn={isOwn}>
                     {formatTimestamp(msg.createdAt || "")}
                   </Timestamp>
@@ -1219,6 +1250,7 @@ const ChatWindow: React.FC = () => {
         </>
       </MessagesContainer>
 
+      {/** 메세지에 대해서 답장할 때 */}
       {replyTarget && (
         <ReplyChatContainer>
           <ReplayBox>
@@ -1239,6 +1271,8 @@ const ChatWindow: React.FC = () => {
         onInputFocus={handleInputFocus}
         onInputBlur={handleInputBlur}
       />
+
+      {/** 이미지 크게 보기 위한 모달 */}
       {isImgOpen && (
         <ImageOpenLayout
           onClick={(e) => {

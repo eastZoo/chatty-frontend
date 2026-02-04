@@ -2,9 +2,9 @@
 import React from "react";
 import styled from "styled-components";
 
-const Badge = styled.div`
-  background-color: #ff4757;
-  color: white;
+const Badge = styled.div<{ count: number }>`
+  background-color: ${(props) => (props.count > 0 ? "#ff4757" : "transparent")};
+  color: ${(props) => (props.count > 0 ? "white" : "transparent")};
   border-radius: 50%;
   padding: 3px 7px;
   font-size: 0.7em;
@@ -17,8 +17,7 @@ interface UnreadBadgeProps {
 }
 
 const UnreadBadge: React.FC<UnreadBadgeProps> = ({ count }) => {
-  if (count <= 0) return null;
-  return <Badge>{count}</Badge>;
+  return <Badge count={count}>{count}</Badge>;
 };
 
 export default UnreadBadge;

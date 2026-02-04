@@ -76,3 +76,17 @@ export const ChatItemLastMessage = styled.div`
   max-width: 100%;
   line-height: 1.4;
 `;
+
+export const ChatRightContentBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  height: 100%;
+
+  p {
+    margin-bottom: auto;
+    font-size: 12px;
+    color: #86868b;
+  }
+`;
