@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { FiCheck, FiClock } from "react-icons/fi";
+import { FiClock } from "react-icons/fi";
 
 const StatusContainer = styled.div`
   display: flex;
