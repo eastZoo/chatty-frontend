@@ -29,6 +29,7 @@ export default function useAuthToken() {
     }
     // localStorage에서 Access Token 제거
     localStorage.removeItem("chatty_accessToken");
+    localStorage.removeItem("chatty_fcmToken");
     await queryClient.cancelQueries();
     queryClient.clear();
     setAdminInfo(null);
