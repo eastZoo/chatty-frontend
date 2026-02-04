@@ -40,24 +40,8 @@ const MessageStatus: React.FC<MessageStatusProps> = ({ status, timestamp }) => {
     switch (status) {
       case "sending":
         return <FiClock size={12} />;
-      case "sent":
-        return <FiCheck size={12} />;
-      case "delivered":
-        return (
-          <div style={{ display: "flex", gap: "1px" }}>
-            <FiCheck size={10} />
-            <FiCheck size={10} style={{ marginLeft: "-2px" }} />
-          </div>
-        );
-      case "read":
-        return (
-          <div style={{ display: "flex", gap: "1px" }}>
-            <FiCheck size={10} />
-            <FiCheck size={10} style={{ marginLeft: "-2px" }} />
-          </div>
-        );
       default:
-        return <FiCheck size={12} />;
+        return <></>;
     }
   };
 
