@@ -28,6 +28,7 @@ import { formatTimestamp } from "@/utils/dateUtils";
 import { parseCodeBlocks } from "@/utils/messageUtils";
 import { downloadFile } from "@/utils/fileUtils";
 import { IoIosClose } from "react-icons/io";
+import { FiDownload } from "react-icons/fi";
 import {
   ChatWindowContainer,
   MessagesContainer,
@@ -43,6 +44,7 @@ import {
   ReplayBox,
   ReplyMessageLayout,
   ImageOpenLayout,
+  ImageBubbleBox,
 } from "./ChatWindow.styles";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
@@ -1204,27 +1206,44 @@ const ChatWindow: React.FC = () => {
                 {/* 파일 첨부 렌더링 */}
                 {msg.files &&
                   msg.files.length > 0 &&
-                  msg.files.map((file) => (
-                    <FileAttachment
-                      key={file.id}
-                      file={{
-                        id: file.id,
-                        originalName: file.originalName,
-                        filename: file.filename,
-                        size: parseInt(file.size),
-                        mimetype: file.mimetype,
-                        url: file.url,
-                      }}
-                      isOwn={isOwn}
-                      onDownload={handleFileDownload}
-                      onClick={() => {
-                        if (file.mimetype.includes("image")) {
-                          setIsImgOpen(!isImgOpen);
-                          setIsImgUrl(file.id);
-                        }
-                      }}
-                    />
-                  ))}
+                  msg.files.map((file) => {
+                    if (file.mimetype.includes("image")) {
+                      return (
+                        <ImageBubbleBox>
+                          <FiDownload
+                            size={20}
+                            color="rgb(153, 153, 153)"
+                            onClick={() => handleFileDownload(file)}
+                          />
+                          <img
+                            src={`${import.meta.env.VITE_API_BASE_URL}/files/${file.id}`}
+                            onClick={() => {
+                              if (file.mimetype.includes("image")) {
+                                setIsImgOpen(!isImgOpen);
+                                setIsImgUrl(file.id);
+                              }
+                            }}
+                          />
+                        </ImageBubbleBox>
+                      );
+                    } else {
+                      return (
+                        <FileAttachment
+                          key={file.id}
+                          file={{
+                            id: file.id,
+                            originalName: file.originalName,
+                            filename: file.filename,
+                            size: parseInt(file.size),
+                            mimetype: file.mimetype,
+                            url: file.url,
+                          }}
+                          isOwn={isOwn}
+                          onDownload={handleFileDownload}
+                        />
+                      );
+                    }
+                  })}
 
                 {/* 송신자 메시지: 상태 표시 */}
                 {isOwn && (

@@ -235,6 +235,21 @@ export const ReplayBox = styled.div`
   }
 `;
 
+export const ImageBubbleBox = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: end;
+  align-items: end;
+  gap: 10px;
+
+  border-radius: 16px;
+
+  img {
+    border-radius: 16px;
+    object-fit: cover;
+  }
+`;
+
 export const ImageOpenLayout = styled.div`
   position: absolute;
   inset: 0; /* top, left, right, bottom: 0 */

@@ -26,14 +26,14 @@ const HeaderContainer = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.sm};
 `;
 
-const Title = styled.div`
+export const Title = styled.div`
   font-size: 18px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text};
   letter-spacing: -0.02em;
 `;
 
-const IconButton = styled.button`
+export const IconButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;

@@ -125,7 +125,6 @@ interface FileAttachmentProps {
   isOwn?: boolean;
   onDownload?: (file: any) => void;
   onRemove?: (fileId: string) => void;
-  onClick?: () => void;
 }
 
 const FileAttachment: React.FC<FileAttachmentProps> = ({
@@ -133,7 +132,6 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
   isOwn = false,
   onDownload,
   onRemove,
-  onClick,
 }) => {
   // 파일명 안전하게 처리 (인코딩 문제 방지)
   const getSafeFileName = (fileName: string) => {
@@ -256,7 +254,7 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
   };
 
   return (
-    <FileContainer onClick={onClick}>
+    <FileContainer>
       <FileContent>
         <FileIconContainer style={{ color: getFileTypeColor(getMimeType()) }}>
           {getFileIcon(getMimeType())}

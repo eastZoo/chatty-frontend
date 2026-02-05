@@ -14,6 +14,7 @@ export interface Chat {
     id: number;
     username: string;
   };
+  friendName?: string;
 }
 export interface Message {
   id: string;
