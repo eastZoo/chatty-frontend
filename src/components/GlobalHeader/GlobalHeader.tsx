@@ -7,7 +7,7 @@ import FriendAddModal from "@/components/FriendAddModal/FriendAddModal";
 import { useRecoilValue } from "recoil";
 import { adminInfoSelector } from "@/store/adminInfo";
 
-export const HeaderContainer = styled.div`
+const HeaderContainer = styled.div`
   position: fixed;
   top: 0;
   left: 0;
