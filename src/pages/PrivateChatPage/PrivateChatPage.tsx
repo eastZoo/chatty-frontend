@@ -1,16 +1,28 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getPrivateChat, type Chat } from "@/lib/api/chat";
 import ChatWindow from "@/components/ChatWindow/ChatWindow";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import { selectedChatState } from "@/store/atoms";
 import { ChatPageContainer } from "../ChatPage/ChatPage.styles";
+import {
+  HeaderContainer,
+  IconButton,
+  Title,
+} from "@/components/GlobalHeader/GlobalHeader";
+import { IoIosArrowBack } from "react-icons/io";
+import { FiPlus } from "react-icons/fi";
+import FriendAddModal from "@/components/FriendAddModal/FriendAddModal";
+import { adminInfoSelector } from "@/store/adminInfo";
 
 const PrivateChatPage: React.FC = () => {
   const { friendId } = useParams<{ friendId: string }>();
   const navigate = useNavigate();
   const [, setSelectedChat] = useRecoilState(selectedChatState);
+  const adminInfo = useRecoilValue(adminInfoSelector);
+
+  const [isModalOpen, setModalOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery<Chat>({
     queryKey: ["privateChat", friendId],
@@ -78,7 +90,22 @@ const PrivateChatPage: React.FC = () => {
 
   return (
     <ChatPageContainer>
+      <HeaderContainer>
+        <IconButton onClick={() => navigate(-1)}>
+          <IoIosArrowBack size={20} />
+        </IconButton>
+        <Title>{data.friendName}</Title>
+        <IconButton onClick={() => setModalOpen(true)}>
+          <FiPlus size={20} />
+        </IconButton>
+      </HeaderContainer>
       <ChatWindow />
+      {isModalOpen && (
+        <FriendAddModal
+          onClose={() => setModalOpen(false)}
+          adminId={adminInfo?.id}
+        />
+      )}
     </ChatPageContainer>
   );
 };

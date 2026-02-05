@@ -8,14 +8,14 @@ const LoginPage = lazy(() => import("@/pages/LoginPage/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage/RegisterPage"));
 const FriendsPage = lazy(() => import("@/pages/FriendsPage/FriendsPage"));
 const PrivateChatPage = lazy(
-  () => import("@/pages/PrivateChatPage/PrivateChatPage")
+  () => import("@/pages/PrivateChatPage/PrivateChatPage"),
 );
 const PrivateChatListPage = lazy(
-  () => import("@/pages/PrivateChatListPage/PrivateChatListPage")
+  () => import("@/pages/PrivateChatListPage/PrivateChatListPage"),
 );
 const SettingsPage = lazy(() => import("@/pages/SettingsPage/SettingsPage"));
 const DisplaySettingsPage = lazy(
-  () => import("@/pages/DisplaySettingsPage/DisplaySettingsPage")
+  () => import("@/pages/DisplaySettingsPage/DisplaySettingsPage"),
 );
 const NotFoundPage = lazy(() => import("@/pages/404/NotFoundPage"));
 
@@ -36,11 +36,12 @@ export default function AppRoutes() {
       children: [
         { index: true, element: <FriendsPage /> },
         { path: "chat", element: <PrivateChatListPage /> },
-        { path: "chat/private/:friendId", element: <PrivateChatPage /> },
         { path: "settings", element: <SettingsPage /> },
         { path: "settings/display", element: <DisplaySettingsPage /> },
       ],
     },
+
+    { path: "chat/private/:friendId", element: <PrivateChatPage /> },
 
     // 404 페이지
     { path: "/404", element: <NotFoundPage /> },

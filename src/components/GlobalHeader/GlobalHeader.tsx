@@ -7,7 +7,7 @@ import FriendAddModal from "@/components/FriendAddModal/FriendAddModal";
 import { useRecoilValue } from "recoil";
 import { adminInfoSelector } from "@/store/adminInfo";
 
-const HeaderContainer = styled.div`
+export const HeaderContainer = styled.div`
   position: fixed;
   top: 0;
   left: 0;
@@ -26,14 +26,14 @@ const HeaderContainer = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.sm};
 `;
 
-const Title = styled.div`
+export const Title = styled.div`
   font-size: 18px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text};
   letter-spacing: -0.02em;
 `;
 
-const IconButton = styled.button`
+export const IconButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
