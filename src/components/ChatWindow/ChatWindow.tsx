@@ -45,6 +45,7 @@ import {
   ReplyMessageLayout,
   ImageOpenLayout,
   ImageBubbleBox,
+  ImageScrollArea,
 } from "./ChatWindow.styles";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
@@ -1308,12 +1309,14 @@ const ChatWindow: React.FC = () => {
             minScale={1}
             panning={{ velocityDisabled: true }}
           >
-            <TransformComponent>
-              <img
-                src={`${import.meta.env.VITE_API_BASE_URL}/files/${isImgUrl}`}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </TransformComponent>
+            <ImageScrollArea>
+              <TransformComponent>
+                <img
+                  src={`${import.meta.env.VITE_API_BASE_URL}/files/${isImgUrl}`}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </TransformComponent>
+            </ImageScrollArea>
           </TransformWrapper>
         </ImageOpenLayout>
       )}

@@ -247,7 +247,7 @@ export const ImageBubbleBox = styled.div<{ isOwn: boolean }>`
   img {
     max-width: ${({ isOwn }) => (isOwn ? "70%" : "70%")};
     min-width: 60px;
-    max-height: ${({ isOwn }) => (isOwn ? "70%" : "70%")};
+    max-height: 210px;
     min-height: 120px;
 
     border-radius: 16px;
@@ -256,27 +256,29 @@ export const ImageBubbleBox = styled.div<{ isOwn: boolean }>`
 `;
 
 export const ImageOpenLayout = styled.div`
-  position: absolute;
-  inset: 0; /* top, left, right, bottom: 0 */
+  position: fixed;
+  inset: 0;
+  padding: 24px;
+
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 999999;
 
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
 
-  background-color: rgba(0, 0, 0, 0.6);
-  z-index: 999;
-
-  padding: 24px;
+  overflow: hidden;
 
   img {
     max-width: 100%;
-    max-height: 100%;
-
-    width: auto;
     height: auto;
-
     object-fit: contain;
-
     border-radius: 8px;
   }
+`;
+
+export const ImageScrollArea = styled.div`
+  max-height: 100%;
+  max-width: 100%;
+  overflow-y: auto;
 `;
