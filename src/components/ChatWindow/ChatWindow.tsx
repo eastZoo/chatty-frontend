@@ -1209,7 +1209,7 @@ const ChatWindow: React.FC = () => {
                   msg.files.map((file) => {
                     if (file.mimetype.includes("image")) {
                       return (
-                        <ImageBubbleBox>
+                        <ImageBubbleBox isOwn={isOwn}>
                           <FiDownload
                             size={20}
                             color="rgb(153, 153, 153)"
