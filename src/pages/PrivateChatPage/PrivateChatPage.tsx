@@ -6,15 +6,27 @@ import ChatWindow from "@/components/ChatWindow/ChatWindow";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { selectedChatState } from "@/store/atoms";
 import { ChatPageContainer } from "../ChatPage/ChatPage.styles";
-import {
-  HeaderContainer,
-  IconButton,
-  Title,
-} from "@/components/GlobalHeader/GlobalHeader";
+import { IconButton, Title } from "@/components/GlobalHeader/GlobalHeader";
 import { IoIosArrowBack } from "react-icons/io";
 import { FiPlus } from "react-icons/fi";
 import FriendAddModal from "@/components/FriendAddModal/FriendAddModal";
 import { adminInfoSelector } from "@/store/adminInfo";
+import { styled } from "styled-components";
+
+const HeaderContainer = styled.div`
+  height: 60px;
+  background: ${({ theme }) => theme.colors.bgSecondary};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-sizing: border-box;
+  z-index: 1000;
+  /* iOS 안전 영역 대응 */
+  padding-top: max(0px, env(safe-area-inset-top));
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+`;
 
 const PrivateChatPage: React.FC = () => {
   const { friendId } = useParams<{ friendId: string }>();
