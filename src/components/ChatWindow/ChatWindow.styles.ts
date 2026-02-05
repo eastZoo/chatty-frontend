@@ -245,6 +245,11 @@ export const ImageBubbleBox = styled.div<{ isOwn: boolean }>`
   border-radius: 16px;
 
   img {
+    max-width: ${({ isOwn }) => (isOwn ? "70%" : "70%")};
+    min-width: 60px;
+    max-height: ${({ isOwn }) => (isOwn ? "70%" : "70%")};
+    min-height: 120px;
+
     border-radius: 16px;
     object-fit: cover;
   }
