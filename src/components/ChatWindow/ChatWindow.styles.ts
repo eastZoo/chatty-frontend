@@ -245,7 +245,7 @@ export const ImageBubbleBox = styled.div<{ isOwn: boolean }>`
   border-radius: 16px;
 
   img {
-    max-width: ${({ isOwn }) => (isOwn ? "70%" : "70%")};
+    max-width: 240px;
     min-width: 60px;
     max-height: 210px;
     min-height: 120px;
