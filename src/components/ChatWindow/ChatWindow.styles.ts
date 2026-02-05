@@ -235,9 +235,9 @@ export const ReplayBox = styled.div`
   }
 `;
 
-export const ImageBubbleBox = styled.div`
+export const ImageBubbleBox = styled.div<{ isOwn: boolean }>`
   display: flex;
-  flex-direction: row;
+  flex-direction: ${(props) => (props.isOwn ? "row" : "row-reverse")};
   justify-content: end;
   align-items: end;
   gap: 10px;
