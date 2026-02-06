@@ -22,6 +22,15 @@ export const MessagesContainer = styled.div`
   padding-bottom: calc(20px + var(--keyboard-offset, 0px));
   -webkit-overflow-scrolling: touch;
   min-height: 0;
+
+  transition: padding-bottom 0.2s ease;
+
+  /* 스크롤바 숨기기 (모바일에서) */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 `;
 
 export const MessageItem = styled.div<{ isOwn?: boolean }>`
