@@ -1,7 +1,6 @@
 import styled from "styled-components";
 
 export const ChatWindowContainer = styled.div`
-  flex: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -13,24 +12,16 @@ export const ChatWindowContainer = styled.div`
 `;
 
 export const MessagesContainer = styled.div`
-  flex: 1;
+  height: calc(100dvh - 120px);
+
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 5px 20px;
   padding-bottom: calc(20px + var(--keyboard-offset, 0px));
-  /* 모바일에서 스크롤 최적화 */
   -webkit-overflow-scrolling: touch;
-  min-height: 0; /* flex 아이템이 축소될 수 있도록 */
-  transition: padding-bottom 0.2s ease;
-
-  /* 스크롤바 숨기기 (모바일에서) */
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  min-height: 0;
 `;
 
 export const MessageItem = styled.div<{ isOwn?: boolean }>`
