@@ -425,27 +425,31 @@ const ChatWindow: React.FC = () => {
       }
 
       // 채팅방 진입 시 읽음 처리 (selectedChat이 설정된 후에 호출되도록 보장)
-      if (messages.length > 0) {
-        if (selectedChat?.type) {
+      if (selectedChat?.type) {
+        if (canMarkAsRead()) {
           markAsRead();
-        } else {
-          // selectedChat이 아직 설정되지 않았으면 약간의 지연 후 재시도
-          const checkSelectedChat = setInterval(() => {
-            if (selectedChat?.type) {
-              clearInterval(checkSelectedChat);
-              markAsRead();
-            }
-          }, 100);
-
-          // 3초 후에도 selectedChat이 설정되지 않으면 강제로 호출
-          setTimeout(() => {
-            clearInterval(checkSelectedChat);
-            if (!selectedChat?.type) {
-              console.warn("selectedChat이 설정되지 않았지만 markAsRead 호출");
-              markAsRead();
-            }
-          }, 3000);
         }
+      } else {
+        // selectedChat이 아직 설정되지 않았으면 약간의 지연 후 재시도
+        const checkSelectedChat = setInterval(() => {
+          if (selectedChat?.type) {
+            clearInterval(checkSelectedChat);
+            if (canMarkAsRead()) {
+              markAsRead();
+            }
+          }
+        }, 100);
+
+        // 3초 후에도 selectedChat이 설정되지 않으면 강제로 호출
+        setTimeout(() => {
+          clearInterval(checkSelectedChat);
+          if (!selectedChat?.type) {
+            console.warn("selectedChat이 설정되지 않았지만 markAsRead 호출");
+            if (canMarkAsRead()) {
+              markAsRead();
+            }
+          }
+        }, 3000);
       }
 
       /**
@@ -552,6 +556,8 @@ const ChatWindow: React.FC = () => {
        * 사용자가 맨 아래에 있을 때만 자동 스크롤
        */
       const handleNewMessage = (message: Message): void => {
+        console.log("새 메시지 수신:", message);
+
         // 현재 채팅방의 메시지인지 확인
         const isMessageForCurrentChat =
           chatId &&
@@ -577,6 +583,15 @@ const ChatWindow: React.FC = () => {
           setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 100);
+        }
+
+        const isFromOtherUser = message.sender?.id !== currentUserId;
+
+        if (isFromOtherUser && canMarkAsRead()) {
+          socket.emit("markAsRead", {
+            chatId,
+            chatType: selectedChat.type,
+          });
         }
       };
 
@@ -704,7 +719,9 @@ const ChatWindow: React.FC = () => {
         direction: "latest",
       });
       // 읽음 상태도 다시 업데이트
-      markAsRead();
+      if (canMarkAsRead()) {
+        markAsRead();
+      }
     };
 
     // 탭 전환 이벤트 디바운싱
@@ -737,11 +754,6 @@ const ChatWindow: React.FC = () => {
           }
           visibilityTimeout = null;
         }, 500); // 500ms 지연
-
-        socket.emit("markAsRead", {
-          chatId: chatId,
-          chatType: selectedChat.type,
-        });
       }
     };
 
@@ -768,11 +780,6 @@ const ChatWindow: React.FC = () => {
           }
           visibilityTimeout = null;
         }, 500);
-
-        socket.emit("markAsRead", {
-          chatId,
-          chatType: selectedChat?.type,
-        });
       }
     };
 
@@ -883,10 +890,6 @@ const ChatWindow: React.FC = () => {
         limit: INITIAL_MESSAGE_LIMIT,
         direction: "latest",
       });
-      socket.emit("markAsRead", {
-        chatId,
-        chatType: selectedChat.type,
-      });
     };
 
     document.addEventListener("visibilitychange", handleVisibility);
@@ -956,6 +959,27 @@ const ChatWindow: React.FC = () => {
     }
     setKeyboardOffset(0);
   }, []);
+
+  const canMarkAsRead = useCallback(() => {
+    if (!chatId || !selectedChat?.type) return false;
+
+    // 1️⃣ 탭 비활성
+    if (document.visibilityState !== "visible") return false;
+
+    // 2️⃣ 채팅 컨테이너 없음
+    const container = messagesContainerRef.current;
+    if (!container) return false;
+
+    // 3️⃣ 실제 화면에 안 보임
+    const rect = container.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+    if (!isVisible) return false;
+
+    // 4️⃣ 사용자가 맨 아래에 없음
+    if (!isUserAtBottom) return false;
+
+    return true;
+  }, [chatId, selectedChat?.type, isUserAtBottom]);
 
   /**
    * 메세지 답장 상태 함수
