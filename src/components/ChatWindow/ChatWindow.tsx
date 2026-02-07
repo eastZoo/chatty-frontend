@@ -426,17 +426,13 @@ const ChatWindow: React.FC = () => {
 
       // 채팅방 진입 시 읽음 처리 (selectedChat이 설정된 후에 호출되도록 보장)
       if (selectedChat?.type) {
-        if (canMarkAsRead()) {
-          markAsRead();
-        }
+        markAsRead();
       } else {
         // selectedChat이 아직 설정되지 않았으면 약간의 지연 후 재시도
         const checkSelectedChat = setInterval(() => {
           if (selectedChat?.type) {
             clearInterval(checkSelectedChat);
-            if (canMarkAsRead()) {
-              markAsRead();
-            }
+            markAsRead();
           }
         }, 100);
 
@@ -445,9 +441,7 @@ const ChatWindow: React.FC = () => {
           clearInterval(checkSelectedChat);
           if (!selectedChat?.type) {
             console.warn("selectedChat이 설정되지 않았지만 markAsRead 호출");
-            if (canMarkAsRead()) {
-              markAsRead();
-            }
+            markAsRead();
           }
         }, 3000);
       }
@@ -585,9 +579,11 @@ const ChatWindow: React.FC = () => {
           }, 100);
         }
 
-        const isFromOtherUser = message.sender?.id !== currentUserId;
-
-        if (isFromOtherUser && canMarkAsRead()) {
+        if (
+          message.sender?.id !== currentUserId &&
+          chatId &&
+          socket.connected
+        ) {
           socket.emit("markAsRead", {
             chatId,
             chatType: selectedChat.type,
@@ -719,9 +715,7 @@ const ChatWindow: React.FC = () => {
         direction: "latest",
       });
       // 읽음 상태도 다시 업데이트
-      if (canMarkAsRead()) {
-        markAsRead();
-      }
+      markAsRead();
     };
 
     // 탭 전환 이벤트 디바운싱
@@ -959,28 +953,6 @@ const ChatWindow: React.FC = () => {
     }
     setKeyboardOffset(0);
   }, []);
-
-  const canMarkAsRead = useCallback(() => {
-    if (!chatId || !selectedChat?.type) return false;
-
-    // 1️⃣ 탭 비활성
-    if (document.visibilityState !== "visible") return false;
-
-    // 2️⃣ 채팅 컨테이너 없음
-    const container = messagesContainerRef.current;
-    if (!container) return false;
-
-    // 3️⃣ 실제 화면에 안 보임
-    const rect = container.getBoundingClientRect();
-    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-    if (!isVisible) return false;
-
-    if (!isUserAtBottom && document.visibilityState != "visible") {
-      return false;
-    }
-
-    return true;
-  }, [chatId, selectedChat?.type, isUserAtBottom]);
 
   /**
    * 메세지 답장 상태 함수
