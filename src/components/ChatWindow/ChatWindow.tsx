@@ -737,6 +737,11 @@ const ChatWindow: React.FC = () => {
           }
           visibilityTimeout = null;
         }, 500); // 500ms 지연
+
+        socket.emit("markAsRead", {
+          chatId: chatId,
+          chatType: selectedChat.type,
+        });
       }
     };
 
