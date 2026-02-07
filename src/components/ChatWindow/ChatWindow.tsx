@@ -975,8 +975,9 @@ const ChatWindow: React.FC = () => {
     const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
     if (!isVisible) return false;
 
-    // 4️⃣ 사용자가 맨 아래에 없음
-    if (!isUserAtBottom) return false;
+    if (!isUserAtBottom && document.visibilityState != "visible") {
+      return false;
+    }
 
     return true;
   }, [chatId, selectedChat?.type, isUserAtBottom]);
