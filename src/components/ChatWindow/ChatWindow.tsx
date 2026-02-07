@@ -425,25 +425,27 @@ const ChatWindow: React.FC = () => {
       }
 
       // 채팅방 진입 시 읽음 처리 (selectedChat이 설정된 후에 호출되도록 보장)
-      if (selectedChat?.type) {
-        markAsRead();
-      } else {
-        // selectedChat이 아직 설정되지 않았으면 약간의 지연 후 재시도
-        const checkSelectedChat = setInterval(() => {
-          if (selectedChat?.type) {
-            clearInterval(checkSelectedChat);
-            markAsRead();
-          }
-        }, 100);
+      if (messages.length > 0) {
+        if (selectedChat?.type) {
+          markAsRead();
+        } else {
+          // selectedChat이 아직 설정되지 않았으면 약간의 지연 후 재시도
+          const checkSelectedChat = setInterval(() => {
+            if (selectedChat?.type) {
+              clearInterval(checkSelectedChat);
+              markAsRead();
+            }
+          }, 100);
 
-        // 3초 후에도 selectedChat이 설정되지 않으면 강제로 호출
-        setTimeout(() => {
-          clearInterval(checkSelectedChat);
-          if (!selectedChat?.type) {
-            console.warn("selectedChat이 설정되지 않았지만 markAsRead 호출");
-            markAsRead();
-          }
-        }, 3000);
+          // 3초 후에도 selectedChat이 설정되지 않으면 강제로 호출
+          setTimeout(() => {
+            clearInterval(checkSelectedChat);
+            if (!selectedChat?.type) {
+              console.warn("selectedChat이 설정되지 않았지만 markAsRead 호출");
+              markAsRead();
+            }
+          }, 3000);
+        }
       }
 
       /**
@@ -550,8 +552,6 @@ const ChatWindow: React.FC = () => {
        * 사용자가 맨 아래에 있을 때만 자동 스크롤
        */
       const handleNewMessage = (message: Message): void => {
-        console.log("새 메시지 수신:", message);
-
         // 현재 채팅방의 메시지인지 확인
         const isMessageForCurrentChat =
           chatId &&
@@ -577,17 +577,6 @@ const ChatWindow: React.FC = () => {
           setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 100);
-        }
-
-        if (
-          message.sender?.id !== currentUserId &&
-          chatId &&
-          socket.connected
-        ) {
-          socket.emit("markAsRead", {
-            chatId,
-            chatType: selectedChat.type,
-          });
         }
       };
 
@@ -774,6 +763,11 @@ const ChatWindow: React.FC = () => {
           }
           visibilityTimeout = null;
         }, 500);
+
+        socket.emit("markAsRead", {
+          chatId,
+          chatType: selectedChat?.type,
+        });
       }
     };
 
@@ -883,6 +877,10 @@ const ChatWindow: React.FC = () => {
         chatType: selectedChat.type,
         limit: INITIAL_MESSAGE_LIMIT,
         direction: "latest",
+      });
+      socket.emit("markAsRead", {
+        chatId,
+        chatType: selectedChat.type,
       });
     };
 
