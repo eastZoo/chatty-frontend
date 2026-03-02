@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 export const InputContainer = styled.form`
   display: flex;
@@ -175,6 +175,11 @@ export const AttachmentContainer = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   max-height: 300px;
   overflow-y: auto;
+`;
+
+export const FileAttachmentList = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
 `;
 
 export const CodeInputModal = styled.div<{ isOpen: boolean }>`

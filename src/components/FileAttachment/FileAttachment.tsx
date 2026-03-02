@@ -20,10 +20,20 @@ const FileContainer = styled.div`
 `;
 
 const FileContent = styled.div`
+  width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   padding: 12px;
   gap: 12px;
+`;
+
+const FileContentBox = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const FileIconContainer = styled.div`
@@ -256,9 +266,23 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
   return (
     <FileContainer>
       <FileContent>
-        <FileIconContainer style={{ color: getFileTypeColor(getMimeType()) }}>
-          {getFileIcon(getMimeType())}
-        </FileIconContainer>
+        <FileContentBox>
+          <FileIconContainer style={{ color: getFileTypeColor(getMimeType()) }}>
+            {getFileIcon(getMimeType())}
+          </FileIconContainer>
+          <ActionButtons>
+            {onDownload && (
+              <ActionButton onClick={() => onDownload(file)} title="다운로드">
+                <FiDownload size={16} />
+              </ActionButton>
+            )}
+            {isOwn && onRemove && (
+              <ActionButton onClick={() => onRemove(file.id)} title="삭제">
+                <FiX size={16} />
+              </ActionButton>
+            )}
+          </ActionButtons>
+        </FileContentBox>
         <FileInfo>
           <FileName>{getSafeFileName(file.originalName)}</FileName>
           <FileMeta>
@@ -268,18 +292,6 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
             </FileType>
           </FileMeta>
         </FileInfo>
-        <ActionButtons>
-          {onDownload && (
-            <ActionButton onClick={() => onDownload(file)} title="다운로드">
-              <FiDownload size={16} />
-            </ActionButton>
-          )}
-          {isOwn && onRemove && (
-            <ActionButton onClick={() => onRemove(file.id)} title="삭제">
-              <FiX size={16} />
-            </ActionButton>
-          )}
-        </ActionButtons>
       </FileContent>
       {renderPreview()}
     </FileContainer>

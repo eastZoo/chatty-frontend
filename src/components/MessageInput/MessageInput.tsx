@@ -541,15 +541,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
               isOwn={true}
             />
           ))}
-          {fileAttachments.map((file) => (
-            <FileAttachment
-              key={file.id}
-              file={file}
-              isOwn={true}
-              onRemove={handleRemoveFile}
-              onDownload={handleFileDownload}
-            />
-          ))}
+          <S.FileAttachmentList>
+            {fileAttachments.map((file) => (
+              <FileAttachment
+                key={file.id}
+                file={file}
+                isOwn={true}
+                onRemove={handleRemoveFile}
+                onDownload={handleFileDownload}
+              />
+            ))}
+          </S.FileAttachmentList>
         </S.AttachmentContainer>
       )}
 

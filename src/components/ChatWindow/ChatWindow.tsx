@@ -43,9 +43,14 @@ import {
   ReplyChatContainer,
   ReplayBox,
   ReplyMessageLayout,
-  ImageOpenLayout,
   ImageBubbleBox,
+  ImageGroup,
+  ImageGroupBox,
+  ImageOpenLayout,
   ImageScrollArea,
+  ImageModalButtonBox,
+  ImageModalButton,
+  ImageLenPlus,
 } from "./ChatWindow.styles";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
@@ -93,8 +98,10 @@ const ChatWindow: React.FC = () => {
     senderId: string;
     senderName: string;
   } | null>(null); // 답장 메세지 상태
-  const [isImgOpen, setIsImgOpen] = useState<boolean>(false); // 이미지 파일 확대 모달
-  const [isImgUrl, setIsImgUrl] = useState<string | null>(null);
+  const [isImgOpen, setIsImgOpen] = useState(false);
+  const [imageList, setImageList] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   const [activeMessageId, setActiveMessageId] = useState<string | null>(null); // 스와이프한 메세지 id 상태 관리
 
   // Refs
@@ -1053,12 +1060,16 @@ const ChatWindow: React.FC = () => {
   /**
    * 파일 다운로드 핸들러
    */
-  const handleFileDownload = async (file: {
-    id: string;
-    originalName: string;
-  }): Promise<void> => {
+  const handleFileDownload = async (
+    file: {
+      id: string;
+      originalName: string;
+    }[],
+  ): Promise<void> => {
     try {
-      await downloadFile(file);
+      for (const f of file) {
+        await downloadFile(f);
+      }
     } catch (error) {
       // 에러는 downloadFile 내부에서 처리됨
       console.error("파일 다운로드 실패:", error);
@@ -1136,6 +1147,11 @@ const ChatWindow: React.FC = () => {
           {messages.map((msg: Message) => {
             const isOwn = msg.sender?.id === currentUserId;
 
+            const imageFiles =
+              msg.files?.filter((f) => f.mimetype.includes("image")) ?? [];
+            const otherFiles =
+              msg.files?.filter((f) => !f.mimetype.includes("image")) ?? [];
+
             return (
               <MessageItem
                 key={msg.id}
@@ -1205,46 +1221,69 @@ const ChatWindow: React.FC = () => {
                 )}
 
                 {/* 파일 첨부 렌더링 */}
-                {msg.files &&
-                  msg.files.length > 0 &&
-                  msg.files.map((file) => {
-                    if (file.mimetype.includes("image")) {
-                      return (
-                        <ImageBubbleBox isOwn={isOwn}>
-                          <FiDownload
-                            size={20}
-                            color="rgb(153, 153, 153)"
-                            onClick={() => handleFileDownload(file)}
-                          />
-                          <img
-                            src={`${import.meta.env.VITE_API_BASE_URL}/files/${file.id}`}
-                            onClick={() => {
-                              if (file.mimetype.includes("image")) {
-                                setIsImgOpen(!isImgOpen);
-                                setIsImgUrl(file.id);
-                              }
-                            }}
-                          />
-                        </ImageBubbleBox>
-                      );
-                    } else {
-                      return (
-                        <FileAttachment
-                          key={file.id}
-                          file={{
-                            id: file.id,
-                            originalName: file.originalName,
-                            filename: file.filename,
-                            size: parseInt(file.size),
-                            mimetype: file.mimetype,
-                            url: file.url,
-                          }}
-                          isOwn={isOwn}
-                          onDownload={handleFileDownload}
-                        />
-                      );
-                    }
-                  })}
+                {imageFiles.length > 0 && (
+                  <ImageGroupBox isOwn={isOwn}>
+                    {/** 이미지의 파일 길이가 9개 이상인 경우 */}
+                    <ImageGroup isOwn={isOwn} count={imageFiles.length}>
+                      {imageFiles.slice(0, 9).map((file, idx) => {
+                        return (
+                          <ImageBubbleBox>
+                            <img
+                              key={file.id}
+                              src={`${import.meta.env.VITE_API_BASE_URL}/files/${file.id}`}
+                              onClick={() => {
+                                const index = imageFiles.findIndex(
+                                  (f) => f.id === file.id,
+                                );
+
+                                setImageList(imageFiles.map((f) => f.id));
+                                setCurrentImageIndex(index);
+                                setIsImgOpen(true);
+                              }}
+                            />
+                            {idx == 8 && (
+                              <ImageLenPlus
+                                onClick={() => {
+                                  const index = imageFiles.findIndex(
+                                    (f) => f.id === file.id,
+                                  );
+
+                                  setImageList(imageFiles.map((f) => f.id));
+                                  setCurrentImageIndex(index);
+                                  setIsImgOpen(true);
+                                }}
+                              >
+                                <p>
+                                  이미지 <br /> 더보기
+                                </p>
+                              </ImageLenPlus>
+                            )}
+                          </ImageBubbleBox>
+                        );
+                      })}
+                    </ImageGroup>
+                    <FiDownload
+                      size={20}
+                      color="rgb(153, 153, 153)"
+                      onClick={() => handleFileDownload(imageFiles)}
+                    />
+                  </ImageGroupBox>
+                )}
+                {otherFiles.map((file) => (
+                  <FileAttachment
+                    key={file.id}
+                    file={{
+                      id: file.id,
+                      originalName: file.originalName,
+                      filename: file.filename,
+                      size: parseInt(file.size),
+                      mimetype: file.mimetype,
+                      url: file.url,
+                    }}
+                    isOwn={isOwn}
+                    onDownload={handleFileDownload}
+                  />
+                ))}
 
                 {/* 송신자 메시지: 상태 표시 */}
                 {isOwn && (
@@ -1312,12 +1351,32 @@ const ChatWindow: React.FC = () => {
             <ImageScrollArea>
               <TransformComponent>
                 <img
-                  src={`${import.meta.env.VITE_API_BASE_URL}/files/${isImgUrl}`}
+                  src={`${import.meta.env.VITE_API_BASE_URL}/files/${imageList[currentImageIndex]}`}
                   onClick={(e) => e.stopPropagation()}
                 />
               </TransformComponent>
             </ImageScrollArea>
           </TransformWrapper>
+          <ImageModalButtonBox>
+            <ImageModalButton
+              onClick={() => {
+                if (currentImageIndex > 0) {
+                  setCurrentImageIndex(currentImageIndex - 1);
+                }
+              }}
+            >
+              이전
+            </ImageModalButton>
+            <ImageModalButton
+              onClick={() => {
+                if (currentImageIndex < imageList.length - 1) {
+                  setCurrentImageIndex(currentImageIndex + 1);
+                }
+              }}
+            >
+              다음
+            </ImageModalButton>
+          </ImageModalButtonBox>
         </ImageOpenLayout>
       )}
     </ChatWindowContainer>

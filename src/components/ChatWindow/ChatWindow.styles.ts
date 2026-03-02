@@ -235,14 +235,37 @@ export const ReplayBox = styled.div`
   }
 `;
 
-export const ImageBubbleBox = styled.div<{ isOwn: boolean }>`
+export const ImageGroupBox = styled.div<{ isOwn: boolean }>`
   display: flex;
-  flex-direction: ${(props) => (props.isOwn ? "row" : "row-reverse")};
+  flex-direction: ${(props) => (props.isOwn ? "row-reverse" : "row")};
   justify-content: end;
   align-items: end;
   gap: 10px;
+`;
 
+export const ImageGroup = styled.div<{ count: number; isOwn: boolean }>`
+  display: grid;
+  gap: 4px;
+  max-width: 240px;
+
+  ${({ count }) => {
+    if (count === 1) return "grid-template-columns: 1fr;";
+    if (count === 2) return "grid-template-columns: repeat(2, 1fr);";
+    return "grid-template-columns: repeat(3, 1fr);";
+  }}
+
+  img {
+    width: 100%;
+    border-radius: 8px;
+    cursor: pointer;
+    object-fit: cover;
+  }
+`;
+
+export const ImageBubbleBox = styled.div`
+  display: flex;
   border-radius: 16px;
+  position: relative;
 
   img {
     max-width: 240px;
@@ -255,6 +278,25 @@ export const ImageBubbleBox = styled.div<{ isOwn: boolean }>`
   }
 `;
 
+export const ImageLenPlus = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+  background-color: rgba(0, 0, 0, 0.6);
+
+  color: white;
+  font-weight: 600;
+`;
+
 export const ImageOpenLayout = styled.div`
   position: fixed;
   inset: 0;
@@ -264,8 +306,10 @@ export const ImageOpenLayout = styled.div`
   z-index: 999999;
 
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
+  gap: 12px;
 
   overflow: hidden;
 
@@ -281,4 +325,19 @@ export const ImageScrollArea = styled.div`
   max-height: 100%;
   max-width: 100%;
   overflow-y: auto;
+`;
+
+export const ImageModalButtonBox = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+export const ImageModalButton = styled.button`
+  padding: 24px;
+  font-size: 16px;
+  background-color: white;
+  border-radius: 15px;
 `;
