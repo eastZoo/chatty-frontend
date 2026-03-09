@@ -17,6 +17,7 @@ import { uploadFile, uploadFileDirect } from "@/lib/api/files";
 import * as S from "./MessageInput.styles";
 import { useMutation } from "@tanstack/react-query";
 import { sendPushAlarm } from "@/lib/api/chat";
+import heic2any from "heic2any";
 
 interface MessageInputProps {
   chatId?: string;
@@ -64,6 +65,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [selectedChat] = useRecoilState(selectedChatState);
   const adminInfo = useRecoilValue(adminInfoSelector);
   const [isSending, setIsSending] = useState(false);
+  // 사진 업로드 후, 확장자를 변경해야 할 지 확인하면서 변경할 때 뜨는 모달 상태 값
+  const [isUploading, setIsUploading] = useState(false);
 
   // 첨부 파일 상태
   const [codeAttachments, setCodeAttachments] = useState<CodeAttachment[]>([]);
@@ -338,6 +341,32 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [codeInput, selectedLanguage]);
 
+  /// 아이폰 사진 업로드시, 확장자 변경 (heic -> jpg)
+  const convertHeicIfNeeded = async (file: File): Promise<File> => {
+    const isHeic =
+      file.type === "image/heic" ||
+      file.type === "image/heif" ||
+      file.name.toLowerCase().endsWith(".heic");
+
+    if (!isHeic) return file;
+
+    setIsUploading(true);
+
+    const convertedBlob = await heic2any({
+      blob: file,
+      toType: "image/jpeg",
+      quality: 0.9,
+    });
+
+    setIsUploading(false);
+
+    return new File(
+      [convertedBlob as Blob],
+      file.name.replace(/\.heic$/i, ".jpg"),
+      { type: "image/jpeg" },
+    );
+  };
+
   // 파일 첨부 처리
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -360,7 +389,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
           }
 
           // 각 파일을 순차적으로 업로드
-          for (const file of Array.from(files)) {
+          for (const originalFile of Array.from(files)) {
+            const file = await convertHeicIfNeeded(originalFile);
+
             console.log("업로드할 파일:", {
               name: file.name,
               size: file.size,
@@ -528,7 +559,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
           )}
         </S.FeatureSlider>
       </S.QuickCodeBar>
-
       {/* 첨부 파일 표시 */}
       {hasAttachments && (
         <S.AttachmentContainer>
@@ -554,7 +584,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </S.FileAttachmentList>
         </S.AttachmentContainer>
       )}
-
       {/* 입력 영역 */}
       <InputContainer
         style={keyboardStyle}
@@ -632,7 +661,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
           {isSending ? "전송중..." : ""}
         </SendButton>
       </InputContainer>
-
       <S.HiddenFileInput
         ref={fileInputRef}
         type="file"
@@ -640,7 +668,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
         onChange={handleFileSelect}
         accept="*/*"
       />
-
       {/* 코드 입력 모달 */}
       <S.CodeInputModal isOpen={showCodeModal}>
         <S.CodeModalContent>
@@ -686,6 +713,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </S.ModalActions>
         </S.CodeModalContent>
       </S.CodeInputModal>
+      {isUploading && (
+        <S.UploadingModal>
+          <S.UploadingModalMessage>
+            이미지 업로드 중입니다...
+          </S.UploadingModalMessage>
+        </S.UploadingModal>
+      )}
     </>
   );
 };

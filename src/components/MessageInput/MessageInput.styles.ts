@@ -336,6 +336,27 @@ export const HiddenFileInput = styled.input`
   display: none;
 `;
 
+export const UploadingModal = styled.div`
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #00000068;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+export const UploadingModalMessage = styled.div`
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+
+  font-size: 14px;
+`;
+
 export const QuickCodeBar = styled.div`
   display: flex;
   align-items: center;
