@@ -465,7 +465,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         const response = await fetch(downloadUrl, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`, // 인증 토큰 추가
+            Authorization: `Bearer ${localStorage.getItem("chatty_accessToken")}`, // 인증 토큰 추가
           },
         });
 

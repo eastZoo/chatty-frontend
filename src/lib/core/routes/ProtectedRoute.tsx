@@ -5,11 +5,11 @@ export default function ProtectedRoute({
 }: {
   children: React.ReactNode;
 }) {
-  const token = localStorage.getItem("access_token"); // 로그인 토큰 확인
+  const token = localStorage.getItem("chatty_accessToken"); // 로그인 토큰 확인
   const location = useLocation();
 
   if (!token) {
-    return <Navigate to="/auth/login" replace state={{ from: location }} />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;

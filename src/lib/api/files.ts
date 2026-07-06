@@ -53,7 +53,7 @@ export const uploadFile = async (file: File): Promise<FileUploadResponse> => {
 
 // 대안적인 파일 업로드 방법 (직접 axios 사용)
 export const uploadFileDirect = async (
-  file: File
+  file: File,
 ): Promise<FileUploadResponse> => {
   const formData = new FormData();
   formData.append("file", file, file.name);
@@ -74,8 +74,9 @@ export const uploadFileDirect = async (
         headers: {
           // Accept 헤더만 설정 (Content-Type은 자동 설정)
           Accept: "application/json",
+          Authorization: `Bearer ${localStorage.getItem("chatty_accessToken") ?? ""}`,
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -94,7 +95,7 @@ export const uploadFileDirect = async (
 
 // 파일 삭제
 export const deleteFile = async (
-  fileId: string
+  fileId: string,
 ): Promise<FileDeleteResponse> => {
   const response = await request<FileDeleteResponse>({
     url: `/files/${fileId}`,
