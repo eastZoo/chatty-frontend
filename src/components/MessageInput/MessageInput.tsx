@@ -46,6 +46,7 @@ interface MessageInputProps {
     message?: Message & { clientMessageId?: string },
   ) => void;
   onMessageFailed: (clientMessageId: string) => boolean;
+  onMessageSent: () => void;
 }
 
 interface CodeAttachment {
@@ -76,6 +77,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onOptimisticMessage,
   onMessageAcknowledged,
   onMessageFailed,
+  onMessageSent,
 }) => {
   const [content, setContent] = useState("");
   const [selectedChat] = useRecoilState(selectedChatState);
@@ -262,6 +264,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           inputRef.current.style.height = "auto";
           inputRef.current.focus();
         }
+        onMessageSent();
       }
     },
     [
@@ -271,6 +274,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       replyTargetId,
       sendWithOptimisticUpdate,
       setReplyTarget,
+      onMessageSent,
     ],
   );
 
@@ -697,15 +701,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
               // 한글 입력(IME) 조합 중이면 아무 것도 안 함
               if (e.nativeEvent.isComposing) return;
 
-              if (e.key === "Enter") {
-                if (e.shiftKey) {
-                  // ✅ Shift + Enter → 줄바꿈 허용 (기본 동작)
-                  return;
-                } else {
-                  // ✅ Enter → 전송
-                  e.preventDefault(); // 줄바꿈 차단
-                  handleSubmit(e);
-                }
+              // Enter는 문단/줄바꿈 입력으로 유지한다. 키보드 전송은
+              // Ctrl+Enter(Windows/Linux) 또는 Cmd+Enter(macOS)를 사용한다.
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                handleSubmit(e);
               }
             }}
           />

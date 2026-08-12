@@ -1116,6 +1116,14 @@ const ChatWindow: React.FC = () => {
    * 메시지 렌더링 헬퍼 함수
    * 메시지 내용을 파싱하여 텍스트와 코드 블록을 렌더링합니다.
    */
+  const renderTextWithLineBreaks = (text: string): React.ReactNode[] =>
+    text.split("\n").map((line, index, lines) => (
+      <React.Fragment key={index}>
+        {line}
+        {index < lines.length - 1 && <br />}
+      </React.Fragment>
+    ));
+
   const renderMessageContent = (
     content: string,
     isOwn: boolean,
@@ -1147,14 +1155,14 @@ const ChatWindow: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {part.content}
+                {renderTextWithLineBreaks(part.content)}
               </a>
             </MessageBubble>
           );
         } else {
           return (
             <MessageBubble key={`text-${index}`} isOwn={isOwn}>
-              {part.content}
+              {renderTextWithLineBreaks(part.content)}
             </MessageBubble>
           );
         }
@@ -1251,7 +1259,9 @@ const ChatWindow: React.FC = () => {
 
           {messages.map((msg: Message) => {
             const isOwn = msg.sender?.id === currentUserId;
-            const hasReplyTarget = Boolean(msg.replyTarget?.id);
+            const replyTarget = msg.replyTarget?.id
+              ? msg.replyTarget
+              : undefined;
 
             const imageFiles =
               msg.files?.filter((f) => f.mimetype.includes("image")) ?? [];
@@ -1308,16 +1318,20 @@ const ChatWindow: React.FC = () => {
 
                 {/* 메시지 내용 렌더링 (코드 블록 포함) */}
                 {/** 메시지 답장 내용이 있는 경우 */}
-                {hasReplyTarget ? (
+                {replyTarget ? (
                   <ReplyMessageLayout
                     isOwn={isOwn}
-                    onClick={() => scrollToMessage(msg.replyTarget!.id!)}
+                    onClick={() => scrollToMessage(replyTarget.id!)}
                   >
                     <p className="reply-user">
-                      {msg.replyTarget.sender?.username}님에게 답장
+                      {replyTarget.sender?.username}님에게 답장
                     </p>
-                    <p className="reply-content">{msg.replyTarget.content}</p>
-                    <p className="send-content">{msg.content}</p>
+                    <p className="reply-content">
+                      {renderTextWithLineBreaks(replyTarget.content ?? "")}
+                    </p>
+                    <p className="send-content">
+                      {renderTextWithLineBreaks(msg.content ?? "")}
+                    </p>
                   </ReplyMessageLayout>
                 ) : (
                   /** 메시지 답장 내용이 없는 경우 */
@@ -1442,6 +1456,7 @@ const ChatWindow: React.FC = () => {
         onOptimisticMessage={handleOptimisticMessage}
         onMessageAcknowledged={handleMessageAcknowledged}
         onMessageFailed={handleMessageFailed}
+        onMessageSent={scrollToLatestMessage}
       />
 
       {/** 이미지 크게 보기 위한 모달 */}

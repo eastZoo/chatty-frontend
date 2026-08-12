@@ -3,7 +3,8 @@ import styled from "styled-components";
 export const ChatWindowContainer = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1 1 0;
+  min-height: 0;
   background: ${({ theme }) => theme.colors.bg};
   position: relative;
   box-sizing: border-box;

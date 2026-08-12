@@ -19,17 +19,11 @@ self.addEventListener("push", (event) => {
     data: { url: data.url || "/chat", chatId: data.chatId },
   };
 
-  event.waitUntil(
-    self.clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clients) => {
-        // A visible app tab already plays the in-page notification sound.
-        if (clients.some((client) => client.visibilityState === "visible")) {
-          return undefined;
-        }
-        return self.registration.showNotification(title, options);
-      }),
-  );
+  // The in-page handler only manages sound/title state. The service worker is
+  // the sole owner of the system notification, so show it even when an app tab
+  // is visible. A message-specific tag prevents duplicate windows for the same
+  // persisted message without suppressing subsequent messages.
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener("notificationclick", (event) => {

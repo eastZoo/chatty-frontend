@@ -13,25 +13,21 @@ const LayoutContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
-  height: -webkit-fill-available; /* iOS Safari 대응 */
+  height: 100dvh;
   background: ${({ theme }) => theme.colors.bg};
   position: relative;
+  overflow: hidden;
 `;
 
 const ContentContainer = styled.div<{ hideNavbar: boolean }>`
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   /* 헤더와 푸터 높이를 정확히 계산하여 콘텐츠가 가려지지 않도록 */
   margin-top: 60px; /* GlobalHeader 높이 */
   margin-bottom: ${({ hideNavbar }) => (hideNavbar ? "0" : "80px")};
-  min-height: calc(
-    100vh - 60px - ${({ hideNavbar }) => (hideNavbar ? "0" : "80px")}
-  );
-
-  /* iOS Safari 주소창 높이 변화 대응 */
-  min-height: -webkit-fill-available;
+  min-height: 0;
 `;
 
 const MainLayout: React.FC = () => {
