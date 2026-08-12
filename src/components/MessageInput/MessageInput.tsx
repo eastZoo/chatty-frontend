@@ -14,10 +14,21 @@ import { selectedChatState } from "@/store/atoms";
 import CodeBlock from "@/components/CodeBlock/CodeBlock";
 import FileAttachment from "@/components/FileAttachment/FileAttachment";
 import { uploadFile, uploadFileDirect } from "@/lib/api/files";
+import type { Message } from "@/lib/api/message";
 import * as S from "./MessageInput.styles";
-import { useMutation } from "@tanstack/react-query";
-import { sendPushAlarm } from "@/lib/api/chat";
 import heic2any from "heic2any";
+import { toast } from "react-toastify";
+
+type ClientMessage = Message & {
+  clientMessageId: string;
+  deliveryStatus?: "sending" | "sent";
+};
+
+interface SendMessageAck {
+  ok: boolean;
+  message?: Message & { clientMessageId?: string };
+  error?: string;
+}
 
 interface MessageInputProps {
   chatId?: string;
@@ -33,6 +44,12 @@ interface MessageInputProps {
   keyboardOffset?: number;
   onInputFocus?: () => void;
   onInputBlur?: () => void;
+  onOptimisticMessage: (message: ClientMessage) => void;
+  onMessageAcknowledged: (
+    clientMessageId: string,
+    message?: Message & { clientMessageId?: string },
+  ) => void;
+  onMessageFailed: (clientMessageId: string) => boolean;
 }
 
 interface CodeAttachment {
@@ -50,7 +67,7 @@ interface FileAttachmentData {
   mimetype?: string;
   type?: string; // 백엔드에서 type 필드를 사용할 수도 있음
   url: string;
-  uploadedBy?: any;
+  uploadedBy?: unknown;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -60,11 +77,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
   keyboardOffset = 0,
   onInputFocus,
   onInputBlur,
+  onOptimisticMessage,
+  onMessageAcknowledged,
+  onMessageFailed,
 }) => {
   const [content, setContent] = useState("");
   const [selectedChat] = useRecoilState(selectedChatState);
   const adminInfo = useRecoilValue(adminInfoSelector);
-  const [isSending, setIsSending] = useState(false);
   // 사진 업로드 후, 확장자를 변경해야 할 지 확인하면서 변경할 때 뜨는 모달 상태 값
   const [isUploading, setIsUploading] = useState(false);
 
@@ -109,21 +128,92 @@ const MessageInput: React.FC<MessageInputProps> = ({
     { value: "text", label: "Plain Text" },
   ];
 
-  // 메세지 보내자마자 푸시 알람 전송
-  const { mutateAsync: pushAlarmSend } = useMutation({
-    mutationFn: (data: { chatId: string; content: string }) =>
-      sendPushAlarm(data),
-    onSuccess: () => {
-      console.log("!! ALARMS");
-    },
-    onError: (error) => {
-      console.log("!! SEND ERROR: ", error);
-    },
-  });
-
   // 입력 필드에 대한 ref 생성
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentChatIdRef = useRef(chatId);
+  currentChatIdRef.current = chatId;
+
+  const sendWithOptimisticUpdate = useCallback(
+    (
+      messageContent: string,
+      attachments: FileAttachmentData[],
+      targetReplyId?: string,
+      restoreOnFailure?: () => void,
+    ) => {
+      if (!chatId || !selectedChat?.type || !adminInfo?.id) return false;
+
+      const clientMessageId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const sentChatId = chatId;
+      const optimisticMessage: ClientMessage = {
+        id: `optimistic:${clientMessageId}`,
+        clientMessageId,
+        deliveryStatus: "sending",
+        content: messageContent,
+        createdAt: new Date().toISOString(),
+        sender: { id: adminInfo.id, username: adminInfo.username },
+        fileIds: attachments.map((file) => file.id),
+        files: attachments.map((file) => ({
+          id: file.id,
+          originalName: file.originalName,
+          filename: file.filename,
+          mimetype: file.mimetype ?? "application/octet-stream",
+          size: String(file.size),
+          url: file.url,
+        })),
+        replyTarget: targetReplyId ? { id: targetReplyId } : undefined,
+        ...(selectedChat.type === "private"
+          ? { privateChat: { id: chatId } }
+          : { chat: { id: chatId } }),
+      };
+
+      onOptimisticMessage(optimisticMessage);
+      socket.timeout(10000).emit(
+        "sendMessage",
+        {
+          chatId,
+          content: messageContent,
+          chatType: selectedChat.type,
+          replyTargetId: targetReplyId,
+          fileIds:
+            attachments.length > 0
+              ? attachments.map((file) => file.id)
+              : undefined,
+          clientMessageId,
+        },
+        (timeoutError: Error | null, ack?: SendMessageAck) => {
+          if (timeoutError || !ack?.ok) {
+            console.error(
+              "메시지 전송 실패:",
+              ack?.error ?? timeoutError?.message ?? "ACK 응답 없음",
+            );
+            const shouldRestore = onMessageFailed(clientMessageId);
+            if (shouldRestore && currentChatIdRef.current === sentChatId) {
+              restoreOnFailure?.();
+              toast.error("메시지 전송에 실패해 입력 내용을 복원했습니다.");
+            }
+            return;
+          }
+
+          onMessageAcknowledged(clientMessageId, ack.message);
+        },
+      );
+
+      return true;
+    },
+    [
+      adminInfo?.id,
+      adminInfo?.username,
+      chatId,
+      onMessageAcknowledged,
+      onMessageFailed,
+      onOptimisticMessage,
+      selectedChat?.type,
+    ],
+  );
 
   const keyboardStyle = useMemo(
     () =>
@@ -142,34 +232,29 @@ const MessageInput: React.FC<MessageInputProps> = ({
         codeAttachments.length > 0 ||
         fileAttachments.length > 0;
 
-      if (hasContent && !isSending) {
-        setIsSending(true);
-
-        const messageData = {
-          chatId,
-          content,
-          userId: adminInfo.id,
-          username: adminInfo.username,
-          chatType: selectedChat?.type,
-          replyTargetId: replyTargetId,
-          // 파일 첨부가 있을 때 fileIds 전송
-          fileIds:
-            fileAttachments.length > 0
-              ? fileAttachments.map((f) => f.id)
-              : undefined,
-          // TODO: 서버에서 지원해야 할 필드들
-          codeAttachments:
-            codeAttachments.length > 0 ? codeAttachments : undefined,
-          fileAttachments:
-            fileAttachments.length > 0 ? fileAttachments : undefined,
-        };
-
-        console.log("메시지 전송 중:", messageData);
-        pushAlarmSend({
-          chatId: chatId!,
-          content: content,
-        });
-        socket.emit("sendMessage", messageData);
+      if (hasContent) {
+        const contentToSend = content;
+        const filesToSend = [...fileAttachments];
+        const codeToRestore = [...codeAttachments];
+        const sent = sendWithOptimisticUpdate(
+          contentToSend,
+          filesToSend,
+          replyTargetId,
+          () => {
+            setContent((current) =>
+              current.trim() ? `${contentToSend}\n${current}` : contentToSend,
+            );
+            setFileAttachments((current) => {
+              const currentIds = new Set(current.map((file) => file.id));
+              return [
+                ...filesToSend.filter((file) => !currentIds.has(file.id)),
+                ...current,
+              ];
+            });
+            setCodeAttachments((current) => [...codeToRestore, ...current]);
+          },
+        );
+        if (!sent) return;
 
         setContent("");
         setCodeAttachments([]);
@@ -180,20 +265,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
         if (inputRef.current) {
           inputRef.current.focus();
         }
-
-        // 전송 상태 리셋 (실제로는 서버 응답을 받으면 리셋해야 함)
-        setTimeout(() => setIsSending(false), 1000);
       }
     },
     [
       content,
-      chatId,
-      adminInfo,
       codeAttachments,
       fileAttachments,
-      selectedChat?.type,
       replyTargetId,
-      isSending,
+      sendWithOptimisticUpdate,
+      setReplyTarget,
     ],
   );
 
@@ -294,37 +374,22 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   // 코드 전송 - 바로 메시지로 전송
   const handleSendCode = useCallback(() => {
-    if (codeInput.trim() && !isSending) {
-      setIsSending(true);
-
+    if (codeInput.trim()) {
       // 코드를 ```로 시작하는 형식으로 변환 (서버에서 파싱 가능)
       const formattedCode = `\`\`\`${selectedLanguage}\n${codeInput.trim()}\n\`\`\``;
 
-      console.log("코드 전송 중:", formattedCode);
-      // 바로 메시지로 전송
-      socket.emit("sendMessage", {
-        chatId,
-        content: formattedCode,
-        userId: adminInfo.id,
-        username: adminInfo.username,
-        chatType: selectedChat?.type,
-        fileIds: undefined, // 코드 전송 시에는 파일 첨부 없음
-      });
+      const codeToRestore = codeInput;
+      const sent = sendWithOptimisticUpdate(formattedCode, [], undefined, () =>
+        setCodeInput((current) =>
+          current.trim() ? `${codeToRestore}\n${current}` : codeToRestore,
+        ),
+      );
+      if (!sent) return;
 
       setCodeInput("");
       // 코드 모드 유지 - 전송 후에도 코드 모드에서 계속 작업 가능
-
-      // 전송 상태 리셋
-      setTimeout(() => setIsSending(false), 1000);
     }
-  }, [
-    codeInput,
-    selectedLanguage,
-    chatId,
-    adminInfo,
-    selectedChat?.type,
-    isSending,
-  ]);
+  }, [codeInput, selectedLanguage, sendWithOptimisticUpdate]);
 
   // 코드 첨부 처리 (기존 모달용)
   const handleAddCode = useCallback(() => {
@@ -652,13 +717,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <SendButton
           type="submit"
           disabled={
-            isSending ||
-            (activeFeature === "code"
+            activeFeature === "code"
               ? !codeInput.trim()
-              : !content.trim() && !hasAttachments)
+              : !content.trim() && !hasAttachments
           }
         >
-          {isSending ? "전송중..." : ""}
+          {""}
         </SendButton>
       </InputContainer>
       <S.HiddenFileInput

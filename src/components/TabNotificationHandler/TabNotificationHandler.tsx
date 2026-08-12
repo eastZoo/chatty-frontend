@@ -9,6 +9,33 @@ import {
 } from "@/utils/notificationSound";
 
 const BASE_TITLE = "chatty";
+const MAX_RECENT_NOTIFICATION_IDS = 200;
+const SHARED_NOTIFICATION_KEY = "chatty_recent_notification_ids";
+
+function claimSharedNotification(messageId: string): boolean {
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem(SHARED_NOTIFICATION_KEY) ?? "[]",
+    ) as string[];
+    if (stored.includes(messageId)) return false;
+    localStorage.setItem(
+      SHARED_NOTIFICATION_KEY,
+      JSON.stringify([...stored.slice(-(MAX_RECENT_NOTIFICATION_IDS - 1)), messageId]),
+    );
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+async function claimNotification(messageId: string): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.locks) {
+    return navigator.locks.request("chatty-notification-sound", () =>
+      claimSharedNotification(messageId),
+    );
+  }
+  return claimSharedNotification(messageId);
+}
 
 type ChatListUpdatePayload = {
   type: "private" | "group" | "read";
@@ -26,6 +53,8 @@ export default function TabNotificationHandler() {
   const selectedChat = useRecoilValue(selectedChatState);
   const [unreadCount, setUnreadCount] = useState(0);
   const warmupDone = useRef(false);
+  const recentMessageIds = useRef(new Set<string>());
+  const recentMessageIdOrder = useRef<string[]>([]);
 
   // 사용자 제스처 시 알림음 잠금 해제 (클릭·키·터치·포커스) — 백그라운드 재생을 위해 필수
   useEffect(() => {
@@ -37,20 +66,18 @@ export default function TabNotificationHandler() {
     document.addEventListener("click", onFirstInteraction, { once: true });
     document.addEventListener("keydown", onFirstInteraction, { once: true });
     document.addEventListener("touchstart", onFirstInteraction, { once: true });
-    window.addEventListener(
-      "focus",
-      () => {
-        if (!warmupDone.current) {
-          warmupNotificationSound();
-          warmupDone.current = true;
-        }
-      },
-      { once: true }
-    );
+    const onFirstFocus = () => {
+      if (!warmupDone.current) {
+        warmupNotificationSound();
+        warmupDone.current = true;
+      }
+    };
+    window.addEventListener("focus", onFirstFocus, { once: true });
     return () => {
       document.removeEventListener("click", onFirstInteraction);
       document.removeEventListener("keydown", onFirstInteraction);
       document.removeEventListener("touchstart", onFirstInteraction);
+      window.removeEventListener("focus", onFirstFocus);
     };
   }, []);
 
@@ -83,15 +110,35 @@ export default function TabNotificationHandler() {
   useEffect(() => {
     if (!user?.id) return;
 
-    const handleChatListUpdate = (data: ChatListUpdatePayload) => {
+    const handleChatListUpdate = async (data: ChatListUpdatePayload) => {
       if (data.type !== "private" || !data.message) return;
       const message = data.message;
       const isOwn = message.sender?.id === user.id;
       if (isOwn) return;
+
+      // Socket reconnects or duplicate server broadcasts must not produce
+      // another audible notification for the same persisted message.
+      if (message.id) {
+        if (recentMessageIds.current.has(message.id)) return;
+
+        if (!(await claimNotification(message.id))) return;
+
+        recentMessageIds.current.add(message.id);
+        recentMessageIdOrder.current.push(message.id);
+        if (
+          recentMessageIdOrder.current.length > MAX_RECENT_NOTIFICATION_IDS
+        ) {
+          const oldestId = recentMessageIdOrder.current.shift();
+          if (oldestId) recentMessageIds.current.delete(oldestId);
+        }
+      }
       // 탭이 보일 때만 "현재 채팅"으로 오면 알림 생략 (다른 탭/창/최소화 시에는 항상 알림)
       const isTabVisible =
         typeof document !== "undefined" &&
         document.visibilityState === "visible";
+      // Background notifications are handled by FCM/service worker only.
+      // Playing socket audio here too creates a duplicate system + page alert.
+      if (!isTabVisible) return;
       const currentChatId = selectedChat?.id;
       if (
         isTabVisible &&

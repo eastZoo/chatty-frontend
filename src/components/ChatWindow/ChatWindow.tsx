@@ -23,7 +23,6 @@ import FileAttachment from "@/components/FileAttachment/FileAttachment";
 import MessageStatus from "@/components/MessageStatus/MessageStatus";
 import socket from "@/lib/api/socket";
 import { type Message } from "@/lib/api/message";
-import { markChatAsRead } from "@/lib/api/chat";
 import { formatTimestamp } from "@/utils/dateUtils";
 import { parseCodeBlocks } from "@/utils/messageUtils";
 import { downloadFile } from "@/utils/fileUtils";
@@ -78,6 +77,11 @@ interface PreviousMessagesResponse {
   cursor?: string; // 다음 페이지를 가져오기 위한 커서
 }
 
+type ClientMessage = Message & {
+  clientMessageId?: string;
+  deliveryStatus?: "sending" | "sent";
+};
+
 const ChatWindow: React.FC = () => {
   // Recoil 상태 관리
   const selectedChat = useRecoilValue(selectedChatState);
@@ -117,6 +121,11 @@ const ChatWindow: React.FC = () => {
   const retryGetMessagesRef = useRef(false); // 안전 타이머에서 getMessages 재요청 1회만 하기 위함
   const moveReplyMessageRef = useRef<Record<string, HTMLDivElement | null>>({}); // 답장했던 메세지로 이동하는 Ref
   const swipeStartX = useRef(0); // 메세지 스와이프하는 동작
+  const isUserAtBottomRef = useRef(isUserAtBottom);
+  const currentUserIdRef = useRef(adminInfo?.id);
+  const confirmedClientMessageIdsRef = useRef(new Set<string>());
+  isUserAtBottomRef.current = isUserAtBottom;
+  currentUserIdRef.current = adminInfo?.id;
 
   // 메모이제이션된 값들
   const chatId = useMemo(() => selectedChat?.id, [selectedChat?.id]);
@@ -128,6 +137,63 @@ const ChatWindow: React.FC = () => {
       }) as React.CSSProperties,
     [keyboardOffset],
   );
+
+  const handleOptimisticMessage = useCallback((message: ClientMessage) => {
+    setMessages((previous) => [...previous, message]);
+  }, []);
+
+  const handleMessageAcknowledged = useCallback(
+    (clientMessageId: string, confirmedMessage?: ClientMessage) => {
+      confirmedClientMessageIdsRef.current.add(clientMessageId);
+      setMessages((previous) => {
+        const optimisticIndex = previous.findIndex(
+          (message: ClientMessage) =>
+            message.clientMessageId === clientMessageId,
+        );
+
+        // The user may have switched rooms before the ACK arrived.
+        if (optimisticIndex === -1) return previous;
+
+        if (!confirmedMessage) {
+          return previous.map((message, index) =>
+            index === optimisticIndex
+              ? { ...message, deliveryStatus: "sent" }
+              : message,
+          );
+        }
+
+        const existingServerMessageIndex = previous.findIndex(
+          (message) => message.id === confirmedMessage.id,
+        );
+        if (
+          existingServerMessageIndex !== -1 &&
+          existingServerMessageIndex !== optimisticIndex
+        ) {
+          return previous.filter((_, index) => index !== optimisticIndex);
+        }
+
+        const reconciledMessage: ClientMessage = {
+          ...confirmedMessage,
+          clientMessageId,
+          deliveryStatus: "sent",
+        };
+        return previous.map((message, index) =>
+          index === optimisticIndex ? reconciledMessage : message,
+        );
+      });
+    },
+    [],
+  );
+
+  const handleMessageFailed = useCallback((clientMessageId: string) => {
+    if (confirmedClientMessageIdsRef.current.has(clientMessageId)) return false;
+    setMessages((previous) =>
+      previous.filter(
+        (message: ClientMessage) => message.clientMessageId !== clientMessageId,
+      ),
+    );
+    return true;
+  }, []);
 
   /**
    * 모바일 웹뷰에서 가상 키보드 높이에 따라 하단 여백을 조정
@@ -316,6 +382,8 @@ const ChatWindow: React.FC = () => {
       return;
     }
     setIsLoading(true);
+    confirmedClientMessageIdsRef.current.clear();
+    let disposed = false;
 
     /**
      * 소켓 연결 상태를 확인하고 연결되지 않은 경우 연결을 시도합니다.
@@ -366,13 +434,8 @@ const ChatWindow: React.FC = () => {
 
         const chatType = selectedChat?.type || "private";
 
-        // API 호출로 읽음 상태 업데이트
-        await markChatAsRead({
-          id: chatId || "",
-          chatType: chatType,
-        });
-
-        // 소켓을 통해 읽음 상태 브로드캐스트
+        // The socket handler persists both message- and chat-level read state.
+        // Calling the REST endpoint as well duplicated the same DB work.
         if (socket.connected && adminInfo?.id) {
           socket.emit("markAsRead", {
             chatId: chatId,
@@ -407,6 +470,7 @@ const ChatWindow: React.FC = () => {
 
       // 소켓 연결 확인 및 대기
       const isConnected = await ensureSocketConnected();
+      if (disposed) return;
       if (!isConnected) {
         console.error("소켓 연결 실패. 메시지를 가져올 수 없습니다.");
         setIsLoading(false);
@@ -556,7 +620,7 @@ const ChatWindow: React.FC = () => {
        * 중복 메시지 방지 로직 포함
        * 사용자가 맨 아래에 있을 때만 자동 스크롤
        */
-      const handleNewMessage = (message: Message): void => {
+      const handleNewMessage = (message: ClientMessage): void => {
         console.log("새 메시지 수신:", message);
 
         // 현재 채팅방의 메시지인지 확인
@@ -567,27 +631,53 @@ const ChatWindow: React.FC = () => {
         if (!isMessageForCurrentChat) {
           return;
         }
+        if (message.clientMessageId) {
+          confirmedClientMessageIdsRef.current.add(message.clientMessageId);
+        }
 
         setMessages((prev) => {
-          // 중복 메시지 방지 (같은 ID가 있는지 확인)
-          const messageExists = prev.some((msg) => msg.id === message.id);
-          if (messageExists) {
+          const serverMessageIndex = prev.findIndex(
+            (existingMessage) => existingMessage.id === message.id,
+          );
+          const optimisticIndex = message.clientMessageId
+            ? prev.findIndex(
+                (existingMessage: ClientMessage) =>
+                  existingMessage.clientMessageId === message.clientMessageId,
+              )
+            : -1;
+
+          if (serverMessageIndex !== -1) {
+            if (
+              optimisticIndex !== -1 &&
+              optimisticIndex !== serverMessageIndex
+            ) {
+              return prev.filter((_, index) => index !== optimisticIndex);
+            }
             console.log("중복 메시지 무시:", message.id);
             return prev;
           }
+
+          if (optimisticIndex !== -1) {
+            return prev.map((existingMessage, index) =>
+              index === optimisticIndex
+                ? { ...message, deliveryStatus: "sent" }
+                : existingMessage,
+            );
+          }
+
           console.log("메시지 추가:", message.id);
           return [...prev, message];
         });
 
         // 사용자가 맨 아래에 있을 때만 자동 스크롤
-        if (isUserAtBottom && messagesEndRef.current) {
+        if (isUserAtBottomRef.current && messagesEndRef.current) {
           setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 100);
         }
 
         if (
-          message.sender?.id !== currentUserId &&
+          message.sender?.id !== currentUserIdRef.current &&
           chatId &&
           socket.connected
         ) {
@@ -632,12 +722,18 @@ const ChatWindow: React.FC = () => {
       socket.on("newMessage", handleNewMessage);
       socket.on("chatListUpdate", handleChatListUpdate);
       socket.on("errorMessage", handleErrorMessage);
-      socket.on("messagesRead", ({ chatId: readChatId, userId }) => {
+      const handleMessagesRead = ({
+        chatId: readChatId,
+        userId,
+      }: {
+        chatId: string;
+        userId: string;
+      }) => {
         if (readChatId !== chatId) return; // ✅ 다른 채팅방 이벤트 무시
 
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.sender?.id === currentUserId
+            msg.sender?.id === currentUserIdRef.current
               ? {
                   ...msg,
                   readByUserIds: Array.from(
@@ -647,7 +743,8 @@ const ChatWindow: React.FC = () => {
               : msg,
           ),
         );
-      });
+      };
+      socket.on("messagesRead", handleMessagesRead);
 
       // 메시지 요청 전에 파라미터 재검증 (비동기 처리 후 상태 변경 가능성 대비)
       if (!chatId || !selectedChat?.type) {
@@ -703,7 +800,7 @@ const ChatWindow: React.FC = () => {
         socket.off("newMessage", handleNewMessage);
         socket.off("chatListUpdate", handleChatListUpdate);
         socket.off("errorMessage", handleErrorMessage);
-        socket.off("messagesRead");
+        socket.off("messagesRead", handleMessagesRead);
       };
     }
 
@@ -793,20 +890,24 @@ const ChatWindow: React.FC = () => {
     let connectHandler: (() => void) | null = null;
 
     ensureSocketConnected().then((isConnected) => {
+      if (disposed) return;
       if (isConnected) {
         // 소켓이 이미 연결된 경우 바로 초기화
         initializeChat().then((cleanup) => {
-          cleanupChat = cleanup;
+          if (disposed) cleanup?.();
+          else cleanupChat = cleanup;
         });
         connectHandler = onReconnect;
         socket.on("connect", onReconnect);
       } else {
         // 연결 대기 중
         const onConnect = async () => {
+          if (disposed) return;
           console.log("소켓 연결 완료:", socket.id);
           if (!cleanupChat) {
             const cleanup = await initializeChat();
-            cleanupChat = cleanup;
+            if (disposed) cleanup?.();
+            else cleanupChat = cleanup;
           }
           connectHandler = onReconnect;
           socket.on("connect", onReconnect);
@@ -815,12 +916,14 @@ const ChatWindow: React.FC = () => {
         socket.on("connect", onConnect);
 
         connectPoll = setInterval(async () => {
+          if (disposed) return;
           if (socket.connected) {
             clearInterval(connectPoll!);
             connectPoll = null;
             if (!cleanupChat) {
               const cleanup = await initializeChat();
-              cleanupChat = cleanup;
+              if (disposed) cleanup?.();
+              else cleanupChat = cleanup;
             }
             connectHandler = onReconnect;
             socket.on("connect", onReconnect);
@@ -831,6 +934,7 @@ const ChatWindow: React.FC = () => {
 
     // 최종 cleanup 함수 반환
     return () => {
+      disposed = true;
       if (connectPoll) {
         clearInterval(connectPoll);
       }
@@ -855,12 +959,6 @@ const ChatWindow: React.FC = () => {
         socket.emit("leaveRoom", chatId);
         joinedRoomRef.current = null;
       }
-
-      // 모든 이벤트 리스너 제거 (안전하게)
-      socket.off("previousMessages");
-      socket.off("newMessage");
-      socket.off("chatListUpdate");
-      socket.off("errorMessage");
 
       if (chatId && adminInfo?.id) {
         socket.emit("markAsRead", {
@@ -964,10 +1062,11 @@ const ChatWindow: React.FC = () => {
   /**
    * 메세지 답장 상태 함수
    */
-  const handleReplyMessage = (message: any) => {
+  const handleReplyMessage = (message: Message) => {
+    if (!message.id || !message.sender?.id || !message.sender.username) return;
     setReplyTarget({
       messageId: message.id,
-      content: message.content,
+      content: message.content ?? "",
       senderId: message.sender.id,
       senderName: message.sender.username,
     });
@@ -1289,7 +1388,11 @@ const ChatWindow: React.FC = () => {
                 {isOwn && (
                   <MessageStatus
                     status={
-                      isReadByOther(msg, currentUserId!) ? "read" : "sent"
+                      (msg as ClientMessage).deliveryStatus === "sending"
+                        ? "sending"
+                        : isReadByOther(msg, currentUserId!)
+                          ? "read"
+                          : "sent"
                     }
                     // timestamp={formatTimestamp(msg.createdAt || "")}
                   />
@@ -1329,6 +1432,9 @@ const ChatWindow: React.FC = () => {
         keyboardOffset={keyboardOffset}
         onInputFocus={handleInputFocus}
         onInputBlur={handleInputBlur}
+        onOptimisticMessage={handleOptimisticMessage}
+        onMessageAcknowledged={handleMessageAcknowledged}
+        onMessageFailed={handleMessageFailed}
       />
 
       {/** 이미지 크게 보기 위한 모달 */}

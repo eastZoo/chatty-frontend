@@ -30,7 +30,7 @@ function getAudioContext(): AudioContext | null {
 function getBeepDataUrl(): string {
   if (fallbackDataUrl) return fallbackDataUrl;
   const sampleRate = 44100;
-  const duration = 0.28;
+  const duration = 0.18;
   const numSamples = Math.round(sampleRate * duration);
   const buf = new ArrayBuffer(44 + numSamples * 2);
   const view = new DataView(buf);
@@ -50,16 +50,11 @@ function getBeepDataUrl(): string {
   view.setUint16(34, 16, true);
   writeStr(36, "data");
   view.setUint32(40, numSamples * 2, true);
-  const f1 = 1046;
-  const f2 = 698;
-  const split = Math.round(numSamples * 0.45);
+  const frequency = 880;
   for (let i = 0; i < numSamples; i++) {
     const t = i / sampleRate;
     const env = i < 20 ? i / 20 : i > numSamples - 200 ? (numSamples - i) / 200 : 1;
-    const s =
-      i < split
-        ? Math.sin(2 * Math.PI * f1 * t) * 0.3 * env
-        : Math.sin(2 * Math.PI * f2 * (t - split / sampleRate)) * 0.28 * env;
+    const s = Math.sin(2 * Math.PI * frequency * t) * 0.28 * env;
     const v = Math.max(-32768, Math.min(32767, Math.floor(s * 32767)));
     view.setInt16(44 + i * 2, v, true);
   }
@@ -132,28 +127,16 @@ export function playNotificationSound(): void {
 function playBeep(ctx: AudioContext): void {
   try {
     const t = ctx.currentTime;
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = "sine";
-    osc1.frequency.value = 1046;
-    gain1.gain.setValueAtTime(0, t);
-    gain1.gain.linearRampToValueAtTime(0.2, t + 0.01);
-    gain1.gain.exponentialRampToValueAtTime(0.01, t + 0.13);
-    osc1.connect(gain1).connect(ctx.destination);
-    osc1.start(t);
-    osc1.stop(t + 0.14);
-
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = "sine";
-    osc2.frequency.value = 698;
-    const delay = 0.11;
-    gain2.gain.setValueAtTime(0, t + delay);
-    gain2.gain.linearRampToValueAtTime(0.17, t + delay + 0.01);
-    gain2.gain.exponentialRampToValueAtTime(0.01, t + delay + 0.16);
-    osc2.connect(gain2).connect(ctx.destination);
-    osc2.start(t + delay);
-    osc2.stop(t + delay + 0.18);
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.2, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.17);
+    oscillator.connect(gain).connect(ctx.destination);
+    oscillator.start(t);
+    oscillator.stop(t + 0.18);
   } catch {
     playWithFallbackAudio();
   }

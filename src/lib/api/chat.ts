@@ -7,7 +7,7 @@ export interface Chat {
   type: string;
   createdAt: string;
   updatedAt: string;
-  participants: any[]; // 배열 안에 두 명의 유저 정보가 있음
+  participants: unknown[]; // 배열 안에 두 명의 유저 정보가 있음
   messages: Message[];
   // 채팅방을 생성한 사용자의 정보 (optional)
   user?: {
@@ -45,17 +45,6 @@ export const updateChatTitle = async (
   });
 };
 
-export const sendPushAlarm = async (datas: {
-  chatId: string;
-  content: string;
-}): Promise<any> => {
-  return request<any>({
-    url: `chats/send/push`,
-    method: "POST",
-    data: datas,
-  });
-};
-
 export const getPrivateChatList = async (): Promise<Chat[]> => {
   return request<Chat[]>({ url: "/chats/private/list", method: "GET" });
 };
@@ -80,6 +69,6 @@ export const getUnreadCount = async (friendId: string): Promise<number> => {
 export const markChatAsRead = async (data: {
   id: string;
   chatType: string;
-}): Promise<any> => {
+}): Promise<unknown> => {
   return request({ url: `/chats/private/read`, method: "POST", data });
 };

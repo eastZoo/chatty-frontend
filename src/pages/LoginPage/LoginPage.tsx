@@ -21,52 +21,37 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const { customLogin } = useAuthToken();
 
-  const handlePermission = async () => {
-    try {
-      await Notification.requestPermission();
-      registerServiceWorker();
-    } catch (error) {
-      console.log("!! PERMISSION ERROR: ", error);
+  const setupPushNotifications = async (): Promise<string> => {
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+      return "";
     }
-  };
 
-  // 서비스 워커 실행 함수
-  const registerServiceWorker = () => {
-    navigator.serviceWorker
-      .register("firebase-messaging-sw.js")
-      .then(function (registration) {
-        console.log("Service Worker 등록 성공:", registration);
-      })
-      .catch(function (error) {
-        console.log("Service Worker 등록 실패:", error);
-        alert(`Service Worker 등록 실패:, ${error}`);
-      });
-  };
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return "";
 
-  const getDeviceToken = async () => {
-    // 권한이 허용된 후에 토큰을 가져옴
-    await getToken(messaging, {
-      vapidKey:
-        "BI_Wyp2W3KQbrrGTywEZfdew85e11SliE5Y9jkZk_xeBCN8E9WNQ-Sm8dDb6Yf7aov5UKcg6HjSEcq889B8f00k",
-    })
-      .then((currentToken) => {
-        if (currentToken) {
-          // 토큰을 서버로 전송하거나 UI 업데이트
-          console.log("토큰: ", currentToken);
-          localStorage.setItem("chatty_fcmToken", currentToken);
-        } else {
-          console.log("토큰을 가져오지 못했습니다. 권한을 다시 요청하세요.");
-        }
-      })
-      .catch((err) => {
-        alert(err);
-        console.log("토큰을 가져오는 중 에러 발생: ", err);
+      const serviceWorkerRegistration = await navigator.serviceWorker.register(
+        "/firebase-messaging-sw.js",
+      );
+      const currentToken = await getToken(messaging, {
+        vapidKey:
+          "BI_Wyp2W3KQbrrGTywEZfdew85e11SliE5Y9jkZk_xeBCN8E9WNQ-Sm8dDb6Yf7aov5UKcg6HjSEcq889B8f00k",
+        serviceWorkerRegistration,
       });
+
+      if (currentToken) {
+        localStorage.setItem("chatty_fcmToken", currentToken);
+      }
+      return currentToken;
+    } catch (error) {
+      console.warn("Push notification setup failed:", error);
+      return "";
+    }
   };
 
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: async (res: any) => {
+    onSuccess: async (res) => {
       console.log(res);
       if (res.success) {
         // Access Token을 localStorage에 저장
@@ -92,14 +77,12 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      handlePermission();
-
-      await getDeviceToken();
+      const fcmToken = await setupPushNotifications();
 
       const credentials: LoginRequest = {
         username,
         password,
-        fcmToken: localStorage.getItem("chatty_fcmToken")!,
+        fcmToken,
       };
 
       mutation.mutate(credentials);

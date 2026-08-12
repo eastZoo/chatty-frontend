@@ -3,7 +3,15 @@ import { type ResponseType } from "@/lib/types/response.types";
 import { request } from "./axiosInstance";
 
 export interface LoginResponse {
-  access_token: string;
+  success: boolean;
+  data: {
+    accessToken: string;
+    refreshToken?: string;
+    id: string;
+    username: string;
+    type?: string;
+  };
+  message?: string;
 }
 
 export interface LoginRequest {
@@ -27,16 +35,16 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
 
 export const register = async (
   data: RegisterRequest,
-): Promise<ResponseType<any>> => {
-  return request<ResponseType<any>>({
+): Promise<ResponseType<unknown>> => {
+  return request<ResponseType<unknown>>({
     url: "/auth/register",
     method: "POST",
     data,
   });
 };
 
-export const logout = async (): Promise<ResponseType<any>> => {
-  return request<ResponseType<any>>({
+export const logout = async (): Promise<ResponseType<unknown>> => {
+  return request<ResponseType<unknown>>({
     url: "/auth/logout",
     method: "POST",
   });
