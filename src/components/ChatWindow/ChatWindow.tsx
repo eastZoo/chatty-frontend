@@ -137,22 +137,37 @@ const ChatWindow: React.FC = () => {
     [keyboardOffset],
   );
 
-  const handleOptimisticMessage = useCallback((message: ClientMessage) => {
-    setMessages((previous) => [...previous, message]);
+  const scrollToLatestMessage = useCallback((behavior: ScrollBehavior) => {
+    const scroll = () => {
+      const container = messagesContainerRef.current;
+      if (!container) return;
 
-    // A message sent by the current user should always bring the conversation
-    // to the newest item, even when they had scrolled up beforehand.
+      // Scroll the actual message viewport. scrollIntoView can select an outer
+      // page/webview scroller instead of this nested overflow container.
+      container.scrollTo({ top: container.scrollHeight, behavior });
+      isUserAtBottomRef.current = true;
+      setIsUserAtBottom(true);
+    };
+
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "end",
-        });
-        isUserAtBottomRef.current = true;
-        setIsUserAtBottom(true);
-      });
+      requestAnimationFrame(scroll);
     });
+
+    // Attachments and mobile keyboard layout can change the height after the
+    // first paint, so align once more after those layout updates settle.
+    window.setTimeout(scroll, 150);
   }, []);
+
+  const handleOptimisticMessage = useCallback(
+    (message: ClientMessage) => {
+      setMessages((previous) => [...previous, message]);
+
+      // Sending always focuses the newest message, regardless of the previous
+      // scroll position.
+      scrollToLatestMessage("smooth");
+    },
+    [scrollToLatestMessage],
+  );
 
   const handleMessageAcknowledged = useCallback(
     (clientMessageId: string, confirmedMessage?: ClientMessage) => {
@@ -661,12 +676,8 @@ const ChatWindow: React.FC = () => {
           return result.messages;
         });
 
-        // 사용자가 맨 아래에 있을 때만 자동 스크롤
-        if (isUserAtBottomRef.current && messagesEndRef.current) {
-          setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-          }, 100);
-        }
+        // 새 메시지는 기존 스크롤 위치와 관계없이 항상 사용자에게 보인다.
+        scrollToLatestMessage("smooth");
 
         if (
           message.sender?.id !== currentUserIdRef.current &&
@@ -960,7 +971,7 @@ const ChatWindow: React.FC = () => {
         });
       }
     };
-  }, [chatId, selectedChat?.type, adminInfo?.id]);
+  }, [chatId, selectedChat?.type, adminInfo?.id, scrollToLatestMessage]);
 
   /**
    * 탭 복귀 시 메시지 재동기화 (다른 탭/최소화 후 돌아왔을 때 소켓이 끊겼거나 메시지 누락 방지)
@@ -1037,12 +1048,9 @@ const ChatWindow: React.FC = () => {
    */
   const handleInputFocus = useCallback(() => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "end",
-      });
+      scrollToLatestMessage("smooth");
     }, 100);
-  }, []);
+  }, [scrollToLatestMessage]);
 
   const handleInputBlur = useCallback(() => {
     if (typeof window !== "undefined" && window.visualViewport) {
