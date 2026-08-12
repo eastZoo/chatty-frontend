@@ -139,6 +139,19 @@ const ChatWindow: React.FC = () => {
 
   const handleOptimisticMessage = useCallback((message: ClientMessage) => {
     setMessages((previous) => [...previous, message]);
+
+    // A message sent by the current user should always bring the conversation
+    // to the newest item, even when they had scrolled up beforehand.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
+        isUserAtBottomRef.current = true;
+        setIsUserAtBottom(true);
+      });
+    });
   }, []);
 
   const handleMessageAcknowledged = useCallback(
@@ -1224,6 +1237,7 @@ const ChatWindow: React.FC = () => {
 
           {messages.map((msg: Message) => {
             const isOwn = msg.sender?.id === currentUserId;
+            const hasReplyTarget = Boolean(msg.replyTarget?.id);
 
             const imageFiles =
               msg.files?.filter((f) => f.mimetype.includes("image")) ?? [];
@@ -1280,7 +1294,7 @@ const ChatWindow: React.FC = () => {
 
                 {/* 메시지 내용 렌더링 (코드 블록 포함) */}
                 {/** 메시지 답장 내용이 있는 경우 */}
-                {msg.replyTarget ? (
+                {hasReplyTarget ? (
                   <ReplyMessageLayout
                     isOwn={isOwn}
                     onClick={() => scrollToMessage(msg.replyTarget!.id!)}
