@@ -152,11 +152,13 @@ const ChatWindow: React.FC = () => {
     };
 
     scroll();
-    requestAnimationFrame(scroll);
+    requestAnimationFrame(() => requestAnimationFrame(scroll));
 
-    // Attachments and mobile keyboard layout can change the height after the
-    // first paint, so align once more after those layout updates settle.
-    window.setTimeout(scroll, 150);
+    // Sending clears the textarea, attachments, and reply preview. Those
+    // elements can resize the chat viewport over several frames (especially
+    // while a mobile keyboard is open), so keep pinning it to the bottom until
+    // the layout has settled.
+    [50, 150, 300, 500].forEach((delay) => window.setTimeout(scroll, delay));
   }, []);
 
   // Run after React has committed the new message DOM but before the browser

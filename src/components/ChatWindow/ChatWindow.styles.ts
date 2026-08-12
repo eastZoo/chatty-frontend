@@ -66,6 +66,7 @@ export const MessageBubble = styled.div<{ isOwn?: boolean }>`
   line-height: 1.4;
   word-wrap: break-word;
   word-break: break-word;
+  white-space: pre-wrap;
   box-shadow: ${({ theme }) => theme.shadows.sm};
   max-width: ${({ isOwn }) => (isOwn ? "70%" : "70%")};
   min-width: 60px;
@@ -135,6 +136,11 @@ export const ReplyMessageLayout = styled.div<{ isOwn?: boolean }>`
     padding-bottom: 6px;
     border-bottom: 1px solid
       ${({ isOwn }) => (isOwn ? "#ffffff4c" : "#00000026")};
+  }
+
+  .reply-content,
+  .send-content {
+    white-space: pre-wrap;
   }
 
   /* 메시지 말풍선 꼬리 */

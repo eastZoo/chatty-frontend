@@ -31,7 +31,7 @@ export const TextInput = styled.textarea`
   line-height: 1.4;
 
   min-height: 30px;
-  max-height: 42px;
+  max-height: 100px;
 
   resize: none; /* 사용자가 드래그로 늘리는 것 방지 */
   overflow-y: auto; /* max-height 초과 시 스크롤 */

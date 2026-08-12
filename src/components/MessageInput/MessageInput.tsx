@@ -259,6 +259,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
         // 메시지 전송 후 입력 필드에 다시 포커스 설정
         if (inputRef.current) {
+          inputRef.current.style.height = "auto";
           inputRef.current.focus();
         }
       }
