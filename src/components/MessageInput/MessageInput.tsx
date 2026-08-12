@@ -701,9 +701,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
               // 한글 입력(IME) 조합 중이면 아무 것도 안 함
               if (e.nativeEvent.isComposing) return;
 
-              // Enter는 문단/줄바꿈 입력으로 유지한다. 키보드 전송은
-              // Ctrl+Enter(Windows/Linux) 또는 Cmd+Enter(macOS)를 사용한다.
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+              // PC에서는 Enter로 전송하고 Shift+Enter로 줄바꿈한다.
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleSubmit(e);
               }
