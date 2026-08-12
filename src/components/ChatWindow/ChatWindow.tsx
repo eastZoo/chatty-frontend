@@ -13,6 +13,7 @@ import React, {
   useRef,
   useMemo,
   useCallback,
+  useLayoutEffect,
 } from "react";
 import { useRecoilValue } from "recoil";
 import { selectedChatState } from "@/store/atoms";
@@ -123,6 +124,7 @@ const ChatWindow: React.FC = () => {
   const isUserAtBottomRef = useRef(isUserAtBottom);
   const currentUserIdRef = useRef(adminInfo?.id);
   const confirmedClientMessageIdsRef = useRef(new Set<string>());
+  const shouldFocusLatestMessageRef = useRef(false);
   isUserAtBottomRef.current = isUserAtBottom;
   currentUserIdRef.current = adminInfo?.id;
 
@@ -137,36 +139,40 @@ const ChatWindow: React.FC = () => {
     [keyboardOffset],
   );
 
-  const scrollToLatestMessage = useCallback((behavior: ScrollBehavior) => {
+  const scrollToLatestMessage = useCallback(() => {
     const scroll = () => {
       const container = messagesContainerRef.current;
       if (!container) return;
 
-      // Scroll the actual message viewport. scrollIntoView can select an outer
-      // page/webview scroller instead of this nested overflow container.
-      container.scrollTo({ top: container.scrollHeight, behavior });
+      // Assigning scrollTop is supported consistently in mobile webviews and
+      // guarantees that the nested message viewport itself is moved.
+      container.scrollTop = container.scrollHeight;
       isUserAtBottomRef.current = true;
       setIsUserAtBottom(true);
     };
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(scroll);
-    });
+    scroll();
+    requestAnimationFrame(scroll);
 
     // Attachments and mobile keyboard layout can change the height after the
     // first paint, so align once more after those layout updates settle.
     window.setTimeout(scroll, 150);
   }, []);
 
+  // Run after React has committed the new message DOM but before the browser
+  // paints it. This avoids racing the state update with an early scroll call.
+  useLayoutEffect(() => {
+    if (!shouldFocusLatestMessageRef.current) return;
+    shouldFocusLatestMessageRef.current = false;
+    scrollToLatestMessage();
+  }, [messages, scrollToLatestMessage]);
+
   const handleOptimisticMessage = useCallback(
     (message: ClientMessage) => {
+      shouldFocusLatestMessageRef.current = true;
       setMessages((previous) => [...previous, message]);
-
-      // Sending always focuses the newest message, regardless of the previous
-      // scroll position.
-      scrollToLatestMessage("smooth");
     },
-    [scrollToLatestMessage],
+    [],
   );
 
   const handleMessageAcknowledged = useCallback(
@@ -662,6 +668,7 @@ const ChatWindow: React.FC = () => {
           confirmedClientMessageIdsRef.current.add(message.clientMessageId);
         }
 
+        shouldFocusLatestMessageRef.current = true;
         setMessages((prev) => {
           const result = reconcileIncomingMessage(
             prev as ClientMessage[],
@@ -675,9 +682,6 @@ const ChatWindow: React.FC = () => {
           }
           return result.messages;
         });
-
-        // 새 메시지는 기존 스크롤 위치와 관계없이 항상 사용자에게 보인다.
-        scrollToLatestMessage("smooth");
 
         if (
           message.sender?.id !== currentUserIdRef.current &&
@@ -1048,7 +1052,7 @@ const ChatWindow: React.FC = () => {
    */
   const handleInputFocus = useCallback(() => {
     setTimeout(() => {
-      scrollToLatestMessage("smooth");
+      scrollToLatestMessage();
     }, 100);
   }, [scrollToLatestMessage]);
 

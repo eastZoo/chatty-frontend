@@ -12,7 +12,8 @@ export const ChatWindowContainer = styled.div`
 `;
 
 export const MessagesContainer = styled.div`
-  height: calc(100dvh - 120px);
+  flex: 1 1 0;
+  height: auto;
 
   display: flex;
   flex-direction: column;
@@ -35,6 +36,7 @@ export const MessagesContainer = styled.div`
 
 export const MessageItem = styled.div<{ isOwn?: boolean }>`
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: ${({ isOwn }) => (isOwn ? "flex-end" : "flex-start")};
   margin-bottom: 16px;
