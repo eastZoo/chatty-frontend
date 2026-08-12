@@ -7,6 +7,7 @@ import useAuthToken from "@/lib/hooks/useAuthToken";
 import { updateSocketToken } from "@/lib/api/socket";
 import { getToken } from "firebase/messaging";
 import { messaging } from "@/lib/settingFCM";
+import { registerChattyServiceWorker } from "@/lib/registerChattyServiceWorker";
 import {
   LoginContainer,
   LoginForm,
@@ -30,9 +31,8 @@ const LoginPage: React.FC = () => {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") return "";
 
-      const serviceWorkerRegistration = await navigator.serviceWorker.register(
-        "/firebase-messaging-sw.js",
-      );
+      const serviceWorkerRegistration = await registerChattyServiceWorker();
+      if (!serviceWorkerRegistration) return "";
       const currentToken = await getToken(messaging, {
         vapidKey:
           "BI_Wyp2W3KQbrrGTywEZfdew85e11SliE5Y9jkZk_xeBCN8E9WNQ-Sm8dDb6Yf7aov5UKcg6HjSEcq889B8f00k",
