@@ -15,14 +15,10 @@ import CodeBlock from "@/components/CodeBlock/CodeBlock";
 import FileAttachment from "@/components/FileAttachment/FileAttachment";
 import { uploadFile, uploadFileDirect } from "@/lib/api/files";
 import type { Message } from "@/lib/api/message";
+import type { ClientMessage } from "@/utils/messageDelivery";
 import * as S from "./MessageInput.styles";
 import heic2any from "heic2any";
 import { toast } from "react-toastify";
-
-type ClientMessage = Message & {
-  clientMessageId: string;
-  deliveryStatus?: "sending" | "sent";
-};
 
 interface SendMessageAck {
   ok: boolean;

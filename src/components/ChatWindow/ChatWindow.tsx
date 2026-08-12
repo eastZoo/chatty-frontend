@@ -25,6 +25,10 @@ import socket from "@/lib/api/socket";
 import { type Message } from "@/lib/api/message";
 import { formatTimestamp } from "@/utils/dateUtils";
 import { parseCodeBlocks } from "@/utils/messageUtils";
+import {
+  reconcileIncomingMessage,
+  type ClientMessage,
+} from "@/utils/messageDelivery";
 import { downloadFile } from "@/utils/fileUtils";
 import { IoIosClose } from "react-icons/io";
 import { FiDownload } from "react-icons/fi";
@@ -76,11 +80,6 @@ interface PreviousMessagesResponse {
   hasMore: boolean; // 더 불러올 메시지가 있는지 여부
   cursor?: string; // 다음 페이지를 가져오기 위한 커서
 }
-
-type ClientMessage = Message & {
-  clientMessageId?: string;
-  deliveryStatus?: "sending" | "sent";
-};
 
 const ChatWindow: React.FC = () => {
   // Recoil 상태 관리
@@ -636,37 +635,17 @@ const ChatWindow: React.FC = () => {
         }
 
         setMessages((prev) => {
-          const serverMessageIndex = prev.findIndex(
-            (existingMessage) => existingMessage.id === message.id,
+          const result = reconcileIncomingMessage(
+            prev as ClientMessage[],
+            message,
+            currentUserIdRef.current,
           );
-          const optimisticIndex = message.clientMessageId
-            ? prev.findIndex(
-                (existingMessage: ClientMessage) =>
-                  existingMessage.clientMessageId === message.clientMessageId,
-              )
-            : -1;
-
-          if (serverMessageIndex !== -1) {
-            if (
-              optimisticIndex !== -1 &&
-              optimisticIndex !== serverMessageIndex
-            ) {
-              return prev.filter((_, index) => index !== optimisticIndex);
-            }
-            console.log("중복 메시지 무시:", message.id);
-            return prev;
-          }
-
-          if (optimisticIndex !== -1) {
-            return prev.map((existingMessage, index) =>
-              index === optimisticIndex
-                ? { ...message, deliveryStatus: "sent" }
-                : existingMessage,
+          if (result.confirmedClientMessageId) {
+            confirmedClientMessageIdsRef.current.add(
+              result.confirmedClientMessageId,
             );
           }
-
-          console.log("메시지 추가:", message.id);
-          return [...prev, message];
+          return result.messages;
         });
 
         // 사용자가 맨 아래에 있을 때만 자동 스크롤
